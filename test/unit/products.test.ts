@@ -71,9 +71,10 @@ describe("productItems", () => {
     ]);
   });
 
-  it("rounds stock down and never below 0", () => {
+  it("rounds stock down and keeps negative stock", () => {
     expect(productItems({ ...simple, stock_level: 2.7 }).items[0].stock_level).toBe(2);
-    expect(productItems({ ...simple, stock_level: -3 }).items[0].stock_level).toBe(0);
+    expect(productItems({ ...simple, stock_level: -3 }).items[0].stock_level).toBe(-3);
+    expect(productItems({ ...simple, stock_level: undefined }).items[0].stock_level).toBe(0);
   });
 });
 
@@ -123,6 +124,37 @@ describe("startingStockRows", () => {
       { variant_id: 10, quantity: 14 },
       { variant_id: 11, quantity: 1 },
     ]);
+  });
+
+  it("brings negative Katana stock up to the Swell level", () => {
+    const mug = productItems(simple).items;
+    const inventory = [{ variant_id: 1, location_id: 7, quantity_in_stock: "-3", quantity_committed: "0" }];
+    expect(startingStockRows(mug, new Map([["MUG", { id: 1 }]]), inventory, settings)).toEqual([
+      { variant_id: 1, quantity: 10, cost_per_unit: 4 },
+    ]);
+  });
+
+  it("sets negative Swell stock in Katana without a cost", () => {
+    const mug = productItems({ ...simple, stock_level: -5 }).items;
+    expect(startingStockRows(mug, new Map([["MUG", { id: 1 }]]), [], settings)).toEqual([{ variant_id: 1, quantity: -5 }]);
+  });
+
+  it("adds committed quantities to negative Swell stock", () => {
+    const mug = productItems({ ...simple, stock_level: -5 }).items;
+    const inventory = [{ variant_id: 1, location_id: 7, quantity_in_stock: "0", quantity_committed: "2" }];
+    expect(startingStockRows(mug, new Map([["MUG", { id: 1 }]]), inventory, settings)).toEqual([{ variant_id: 1, quantity: -3 }]);
+  });
+
+  it("skips items already at the Swell level", () => {
+    const mug = productItems({ ...simple, stock_level: -3 }).items;
+    const inventory = [{ variant_id: 1, location_id: 7, quantity_in_stock: "-3", quantity_committed: "0" }];
+    expect(startingStockRows(mug, new Map([["MUG", { id: 1 }]]), inventory, settings)).toEqual([]);
+  });
+
+  it("leaves Katana variants with positive stock alone, even when Swell is negative", () => {
+    const mug = productItems({ ...simple, stock_level: -5 }).items;
+    const inventory = [{ variant_id: 1, location_id: 7, quantity_in_stock: "4", quantity_committed: "0" }];
+    expect(startingStockRows(mug, new Map([["MUG", { id: 1 }]]), inventory, settings)).toEqual([]);
   });
 
   it("skips items without Swell stock or a Katana variant, and sends the cost", () => {
@@ -189,6 +221,25 @@ describe("exportProduct", () => {
     expect(await exportProduct(settings, colored, items, known)).toEqual({ created: false, variants_created: 0, adjusted: 0 });
     expect(katanaCalls(fetchMock)).toEqual(["GET /inventory"]);
     expect(inventoryQuery).toMatchObject({ location_id: "7" });
+  });
+
+  it("sends negative Swell stock as a negative starting adjustment", async () => {
+    stub({ "GET /inventory": { data: [] }, "POST /stock_adjustments": { id: 1 } });
+    const mug = productItems({ ...simple, stock_level: -2 }).items;
+
+    expect(await exportProduct(settings, simple, mug, new Map([["MUG", { id: 1, sku: "MUG", product_id: 300 }]]))).toEqual({
+      created: false,
+      variants_created: 0,
+      adjusted: 1,
+    });
+    expect(bodies("POST /stock_adjustments")[0].stock_adjustment_rows).toEqual([{ variant_id: 1, quantity: -2 }]);
+  });
+
+  it("does not read inventory when Swell stock is zero", async () => {
+    stub({});
+    const mug = productItems({ ...simple, stock_level: 0 }).items;
+    await exportProduct(settings, simple, mug, new Map([["MUG", { id: 1, sku: "MUG", product_id: 300 }]]));
+    expect(katanaCalls(fetchMock)).toEqual([]);
   });
 
   it("refuses to add variants to a Katana material", async () => {

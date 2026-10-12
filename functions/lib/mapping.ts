@@ -158,5 +158,5 @@ export function stockTarget(row: KatanaInventory, mode: KatanaSettings['stock_qu
   const inStock = Number(row.quantity_in_stock) || 0;
   const committed = Number(row.quantity_committed) || 0;
   const quantity = mode === 'in_stock' ? inStock : inStock - committed;
-  return Math.max(0, Math.floor(quantity + 1e-9));
+  return Math.floor(quantity + 1e-9);
 }

@@ -140,6 +140,17 @@ describe("applyInventory", () => {
     });
   });
 
+  it("writes negative Katana stock to Swell", async () => {
+    const swell = makeSwell();
+    const result = await applyInventory(swell, [row("SIMPLE", 1, 3)], settings, appValues);
+    expect(result.changes).toEqual([{ product: "Mug", variant: null, change: -6, sku: "SIMPLE" }]);
+    expect(swell.post.mock.calls[0][1]).toMatchObject({
+      parent_id: "p_simple",
+      quantity: -6,
+      reason_message: expect.stringContaining("4 → -2"),
+    });
+  });
+
   it("skips products with stock tracking off", async () => {
     const swell = makeSwell({ tracking: false });
     const result = await applyInventory(swell, [row("SIMPLE", 10)], settings, appValues);

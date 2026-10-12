@@ -56,7 +56,7 @@ export function productItems(
         {
           sku: String(product.sku),
           name: product.name,
-          stock_level: Math.max(0, Math.floor(Number(product.stock_level) || 0)),
+          stock_level: Math.floor(Number(product.stock_level) || 0),
           price: money(product.price),
           cost: money(product.cost),
           config_attributes: [],
@@ -84,7 +84,7 @@ export function productItems(
     items.push({
       sku: String(variant.sku),
       name: variant.name || product.name,
-      stock_level: Math.max(0, Math.floor(Number(variant.stock_level) || 0)),
+      stock_level: Math.floor(Number(variant.stock_level) || 0),
       price: money(variant.price ?? product.price),
       cost: money(variant.cost ?? product.cost),
       config_attributes,
@@ -126,8 +126,10 @@ export function buildKatanaProduct(product: any, items: ProductItem[]) {
   };
 }
 
-// Starting stock rows: items with Swell stock whose Katana variant has nothing in stock at the location.
-// With "in stock minus committed" the committed quantity is added, so Katana's available stock equals Swell's.
+// Starting stock rows: items with Swell stock (positive or negative) whose Katana variant has no positive stock
+// at the location. Each row adjusts Katana by the difference, so Katana ends at the Swell level, also when either
+// side is negative. With "in stock minus committed" the committed quantity is added, so Katana's available stock
+// equals Swell's. Katana variants with positive stock are left alone.
 export function startingStockRows(
   items: ProductItem[],
   variantsBySku: Map<string, KatanaVariant>,
@@ -137,18 +139,24 @@ export function startingStockRows(
   const rows = [];
   for (const item of items) {
     const variant = variantsBySku.get(item.sku);
-    if (!variant || item.stock_level <= 0) {
+    if (!variant || item.stock_level === 0) {
       continue;
     }
     const stock = inventory.find((row) => row.variant_id === variant.id);
-    if ((Number(stock?.quantity_in_stock) || 0) !== 0) {
+    const inStock = Number(stock?.quantity_in_stock) || 0;
+    if (inStock > 0) {
       continue;
     }
     const committed = settings.stock_quantity === 'in_stock' ? 0 : Math.max(0, Number(stock?.quantity_committed) || 0);
+    const quantity = item.stock_level + committed - inStock;
+    if (quantity === 0) {
+      continue;
+    }
     rows.push({
       variant_id: variant.id,
-      quantity: item.stock_level + committed,
-      ...(item.cost !== null && { cost_per_unit: item.cost }),
+      quantity,
+      // cost applies to stock added, not removed
+      ...(item.cost !== null && quantity > 0 && { cost_per_unit: item.cost }),
     });
   }
   return rows;
@@ -194,7 +202,7 @@ export async function exportProduct(
     }
   }
 
-  const withStock = items.filter((item) => item.stock_level > 0 && variantsBySku.has(item.sku));
+  const withStock = items.filter((item) => item.stock_level !== 0 && variantsBySku.has(item.sku));
   if (!withStock.length) {
     return result;
   }

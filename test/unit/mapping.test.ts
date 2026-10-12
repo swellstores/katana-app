@@ -214,8 +214,13 @@ describe("stockTarget", () => {
     expect(stockTarget(row, "in_stock")).toBe(10);
   });
 
-  it("never goes below zero", () => {
-    expect(stockTarget({ ...row, quantity_in_stock: "1", quantity_committed: "5" }, "available")).toBe(0);
+  it("keeps negative stock", () => {
+    expect(stockTarget({ ...row, quantity_in_stock: "1", quantity_committed: "5" }, "available")).toBe(-4);
+    expect(stockTarget({ ...row, quantity_in_stock: "-3", quantity_committed: "0" }, "in_stock")).toBe(-3);
+    expect(stockTarget({ ...row, quantity_in_stock: "-2.5", quantity_committed: "0" }, "in_stock")).toBe(-3);
+  });
+
+  it("treats missing quantities as zero", () => {
     expect(stockTarget({ variant_id: 1, location_id: 7 }, "available")).toBe(0);
   });
 });
