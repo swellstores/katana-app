@@ -84,8 +84,8 @@ async function checkNow(req: SwellRequest, settings: KatanaSettings) {
 
 function jobMessage(type: JobType, job: { status: string }, started: boolean) {
   return started
-    ? `${JOB_LABELS[type]} started. Follow it under Katana syncs in the dashboard sidebar.`
-    : `A ${JOB_LABELS[type].toLowerCase()} is already ${job.status}. Follow it under Katana syncs in the dashboard sidebar.`;
+    ? `${JOB_LABELS[type]} started. Follow it under Katana tasks in the dashboard sidebar.`
+    : `A ${JOB_LABELS[type].toLowerCase()} is already ${job.status}. Follow it under Katana tasks in the dashboard sidebar.`;
 }
 
 async function syncInventory(req: SwellRequest, settings: KatanaSettings) {
@@ -93,7 +93,7 @@ async function syncInventory(req: SwellRequest, settings: KatanaSettings) {
     return { message: 'Set the API key and Location ID first.' };
   }
   if (settings.sync_inventory === false) {
-    return { message: 'Turn on "Sync inventory from Katana" in the app settings first.' };
+    return { message: 'Turn on "Sync stock from Katana automatically" in the app settings first.' };
   }
   const { job, started } = await startJob(req.swell, 'inventory');
   return { message: jobMessage('inventory', job, started) };

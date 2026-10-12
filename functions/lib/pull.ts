@@ -269,7 +269,7 @@ export async function runChecks(
   return results;
 }
 
-// Plain-language summary of a check, for the "Check Katana now" action
+// Plain-language summary of a check, for the "Get updates from Katana" action
 export function describeChecks(settings: KatanaSettings, results: PullResult[]): string {
   const parts = pullSources(settings).map((source) => {
     const result = results.find((r) => r.source === source);

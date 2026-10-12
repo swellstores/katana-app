@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/content.json",
   "collection": "pulls",
-  "label": "Katana checks",
+  "label": "Katana pulls",
   "description": "Each record is one 5-minute check that changed something in Swell, or one that continues on the next run",
   "fields": [
     {
@@ -138,7 +138,7 @@
     {
       "id": "list",
       "nav": {
-        "label": "Katana checks"
+        "label": "Katana pulls"
       },
       "actions": [
         {
@@ -189,7 +189,7 @@
     },
     {
       "id": "edit",
-      "title": "Katana check: {{ record.source }}",
+      "title": "Katana pull: {{ record.source }}",
       "fields": [
         {
           "type": "field_row",

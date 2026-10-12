@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/setting.json",
   "label": "Katana",
-  "description": "Send Swell orders to Katana as sales orders, and every 5 minutes bring status, tracking and stock changes back to Swell. Create an API key in Katana → Settings → API → API keys. Jobs are listed under Katana syncs and checks under Katana checks in the dashboard sidebar.",
+  "description": "Send Swell orders to Katana as sales orders, and every 5 minutes bring status, tracking and stock changes back to Swell. Create an API key in Katana → Settings → API → API keys. Jobs are listed under Katana tasks and checks under Katana pulls in the dashboard sidebar.",
   "actions": [
     {
       "id": "test_connection",
@@ -12,24 +12,24 @@
     },
     {
       "id": "check_now",
-      "label": "Check Katana now",
+      "label": "Get updates from Katana",
       "function": "katana-actions",
       "loading_label": "Checking Katana…",
-      "hint": "Looks for sales order and stock changes in Katana right away, instead of waiting for the 5-minute check. Checks that change something are logged under Katana checks."
+      "hint": "Looks for sales order and stock changes in Katana right away, instead of waiting for the 5-minute check. Checks that change something are logged under Katana pulls."
     },
     {
       "id": "sync_inventory",
-      "label": "Sync inventory now",
+      "label": "Sync stock from Katana",
       "function": "katana-actions",
       "loading_label": "Starting the stock sync…",
-      "hint": "Starts a job that copies all Katana stock at the location to Swell, page by page. Follow it under Katana syncs in the sidebar."
+      "hint": "Starts a job that copies all Katana stock at the location to Swell, page by page. Follow it under Katana tasks in the sidebar."
     },
     {
       "id": "send_products",
       "label": "Create products in Katana",
       "function": "katana-actions",
       "loading_label": "Starting the product export…",
-      "hint": "Creates Katana products and variants for Swell products with stock tracking on, and sets their starting stock in Katana to the Swell stock. Follow it under Katana syncs.",
+      "hint": "Creates Katana products and variants for Swell products with stock tracking on, and sets their starting stock in Katana to the Swell stock. Follow it under Katana tasks.",
       "modal": {
         "title": "Create products in Katana",
         "description": "For every Swell product with stock tracking on, creates the Katana product with its variants (matched by SKU; SKUs already in Katana are not created again). Then, for variants that have no stock in Katana at the location, adds a stock adjustment so Katana stock equals the Swell stock. Items without a SKU are skipped. After this, Katana is the source of truth for stock again.",
@@ -105,7 +105,7 @@
     },
     {
       "id": "sync_inventory",
-      "label": "Sync inventory from Katana",
+      "label": "Sync stock from Katana automatically",
       "type": "boolean",
       "ui": "toggle",
       "description": "Sets Swell stock levels from Katana by SKU: every 5 minutes for items that moved, plus an hourly stock sync job. Only products with stock tracking on are changed.",

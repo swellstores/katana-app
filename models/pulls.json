@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/model.json",
   "collection": "pulls",
-  "label": "Katana checks",
+  "label": "Katana pulls",
   "description": "One record per 5-minute check that changed something in Swell, or that continues on the next run",
   "name_pattern": "{source}",
   "fields": {

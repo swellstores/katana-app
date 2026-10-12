@@ -28,7 +28,7 @@ export default async function (req: SwellRequest) {
   );
 }
 
-// Hourly jobs would fill the Katana syncs list; keep a few days of them
+// Hourly jobs would fill the Katana tasks list; keep a few days of them
 export async function removeOldScheduledJobs(swell: SwellAPI, now = Date.now()): Promise<number> {
   const old = await swell.get('/syncs', {
     where: {

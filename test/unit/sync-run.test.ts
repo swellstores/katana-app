@@ -76,7 +76,7 @@ describe("sync-run", () => {
   it.each([
     ["the app is disabled", { enabled: false }, "The Katana app is turned off in settings"],
     ["credentials are missing", { location_id: undefined }, "Katana API key or Location ID is not set in the app settings"],
-    ["inventory sync is off", { sync_inventory: false }, '"Sync inventory from Katana" is off in the app settings'],
+    ["inventory sync is off", { sync_inventory: false }, '"Sync stock from Katana automatically" is off in the app settings'],
   ])("fails when %s", async (_name, override, message) => {
     const { req, put } = setup({ settings: { ...SETTINGS, ...override } });
     await handler(req);

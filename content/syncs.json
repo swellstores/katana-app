@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/content.json",
   "collection": "syncs",
-  "label": "Katana syncs",
+  "label": "Katana tasks",
   "description": "Stock syncs from Katana, order syncs and product exports to Katana, run step by step",
   "fields": [
     {
@@ -224,7 +224,7 @@
     {
       "id": "list",
       "nav": {
-        "label": "Katana syncs"
+        "label": "Katana tasks"
       },
       "sort": {
         "date_created": "desc"
@@ -289,8 +289,12 @@
       ],
       "actions": [
         {
+          "id": "new",
+          "hidden": true
+        },
+        {
           "id": "sync_inventory",
-          "label": "Sync all stock",
+          "label": "Sync stock from Katana",
           "function": "katana-actions",
           "loading_label": "Starting the stock sync...",
           "modal": {
@@ -301,7 +305,7 @@
         },
         {
           "id": "send_orders",
-          "label": "Send existing orders",
+          "label": "Send orders to Katana",
           "function": "katana-actions",
           "loading_label": "Starting the order sync...",
           "modal": {
@@ -347,7 +351,7 @@
     },
     {
       "id": "edit",
-      "title": "Katana sync: {{ record.type }}",
+      "title": "Katana task: {{ record.type }}",
       "fields": [
         {
           "type": "field_row",

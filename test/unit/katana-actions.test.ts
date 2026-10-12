@@ -108,13 +108,13 @@ describe("katana-actions", () => {
   describe("sync_inventory", () => {
     it("starts a stock sync job", async () => {
       const { req, post } = setup({ action: "sync_inventory" });
-      expect(await handler(req)).toEqual({ message: "Stock sync started. Follow it under Katana syncs in the dashboard sidebar." });
+      expect(await handler(req)).toEqual({ message: "Stock sync started. Follow it under Katana tasks in the dashboard sidebar." });
       expect(post).toHaveBeenCalledWith("/syncs", { type: "inventory", status: "pending", trigger: "manual" });
     });
 
     it("points to the active job instead of starting another", async () => {
       const { req, post } = setup({ action: "sync_inventory", active: [{ id: "busy", status: "waiting" }] });
-      expect(await handler(req)).toEqual({ message: "A stock sync is already waiting. Follow it under Katana syncs in the dashboard sidebar." });
+      expect(await handler(req)).toEqual({ message: "A stock sync is already waiting. Follow it under Katana tasks in the dashboard sidebar." });
       expect(post).not.toHaveBeenCalled();
     });
 
@@ -122,14 +122,14 @@ describe("katana-actions", () => {
       const noLocation = setup({ action: "sync_inventory", settings: { ...SETTINGS, location_id: undefined } });
       expect(await handler(noLocation.req)).toEqual({ message: "Set the API key and Location ID first." });
       const off = setup({ action: "sync_inventory", settings: { ...SETTINGS, sync_inventory: false } });
-      expect(await handler(off.req)).toEqual({ message: 'Turn on "Sync inventory from Katana" in the app settings first.' });
+      expect(await handler(off.req)).toEqual({ message: 'Turn on "Sync stock from Katana automatically" in the app settings first.' });
     });
   });
 
   describe("send_orders", () => {
     it("starts an order sync job from a date", async () => {
       const { req, post } = setup({ action: "send_orders", data: { date_from: "2026-09-01T00:00:00.000Z" } });
-      expect(await handler(req)).toEqual({ message: "Order sync started. Follow it under Katana syncs in the dashboard sidebar." });
+      expect(await handler(req)).toEqual({ message: "Order sync started. Follow it under Katana tasks in the dashboard sidebar." });
       expect(post).toHaveBeenCalledWith("/syncs", { type: "orders", status: "pending", trigger: "manual", date_from: "2026-09-01T00:00:00.000Z" });
     });
 
@@ -150,7 +150,7 @@ describe("katana-actions", () => {
   describe("send_products", () => {
     it("starts a product export job", async () => {
       const { req, post } = setup({ action: "send_products" });
-      expect(await handler(req)).toEqual({ message: "Product export started. Follow it under Katana syncs in the dashboard sidebar." });
+      expect(await handler(req)).toEqual({ message: "Product export started. Follow it under Katana tasks in the dashboard sidebar." });
       expect(post).toHaveBeenCalledWith("/syncs", { type: "products", status: "pending", trigger: "manual" });
     });
 

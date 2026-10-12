@@ -59,7 +59,7 @@ export default async function (req: SwellRequest) {
     return fail('Katana API key or Location ID is not set in the app settings');
   }
   if (job.type === 'inventory' && settings.sync_inventory === false) {
-    return fail('"Sync inventory from Katana" is off in the app settings');
+    return fail('"Sync stock from Katana automatically" is off in the app settings');
   }
 
   const ctx = {

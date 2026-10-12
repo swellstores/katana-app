@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/model.json",
   "collection": "syncs",
-  "label": "Katana syncs",
+  "label": "Katana tasks",
   "description": "Katana sync jobs: stock from Katana, existing orders to Katana, or Swell products to Katana, run step by step",
   "name_pattern": "{type}",
   "fields": {
