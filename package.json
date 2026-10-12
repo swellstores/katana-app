@@ -1,10 +1,10 @@
 {
   "description": "Sync Swell orders and inventory with Katana Cloud Inventory",
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "~0.12.21",
+    "@cloudflare/vitest-pool-workers": "~0.23.0",
     "@swell/app-types": "^1.2.0",
     "typescript": "^5.9.3",
-    "vitest": "3.2.x"
+    "vitest": "5.0.x"
   },
   "name": "katana",
   "private": true,
