@@ -1,0 +1,539 @@
+{
+  "$schema": "https://json.swell.store/content.json",
+  "collection": "syncs",
+  "label": "Katana syncs",
+  "description": "Stock syncs from Katana, order syncs and product exports to Katana, run step by step",
+  "fields": [
+    {
+      "id": "type",
+      "label": "Sync",
+      "type": "select",
+      "required": true,
+      "options": [
+        {
+          "value": "inventory",
+          "label": "Stock from Katana"
+        },
+        {
+          "value": "orders",
+          "label": "Existing orders to Katana"
+        },
+        {
+          "value": "products",
+          "label": "Swell products to Katana"
+        }
+      ]
+    },
+    {
+      "id": "trigger",
+      "label": "Started by",
+      "type": "select",
+      "readonly": true,
+      "options": [
+        {
+          "value": "manual",
+          "label": "Dashboard"
+        },
+        {
+          "value": "schedule",
+          "label": "Hourly schedule"
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "label": "Status",
+      "type": "select",
+      "readonly": true,
+      "options": [
+        {
+          "value": "pending",
+          "label": "Pending"
+        },
+        {
+          "value": "running",
+          "label": "Running"
+        },
+        {
+          "value": "waiting",
+          "label": "Waiting to retry"
+        },
+        {
+          "value": "completed",
+          "label": "Completed"
+        },
+        {
+          "value": "failed",
+          "label": "Failed"
+        },
+        {
+          "value": "canceled",
+          "label": "Canceled"
+        }
+      ]
+    },
+    {
+      "id": "date_from",
+      "label": "Orders created on or after",
+      "type": "date",
+      "description": "Order syncs only. Optional; leave empty to send every paid order that isn't in Katana yet."
+    },
+    {
+      "id": "checked",
+      "label": "Checked",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "changed",
+      "label": "Updated / sent / created",
+      "type": "number",
+      "readonly": true,
+      "description": "Stock syncs: Swell stock levels changed. Order syncs: orders sent to Katana. Product exports: Katana products created or given new variants."
+    },
+    {
+      "id": "skipped",
+      "label": "Skipped",
+      "type": "number",
+      "readonly": true,
+      "description": "Stock syncs: Katana items without a SKU, or Swell products with stock tracking off. Order syncs: orders with nothing to ship. Product exports: products or variants without a SKU."
+    },
+    {
+      "id": "not_found",
+      "label": "SKUs not in Swell",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "failed",
+      "label": "Failed",
+      "type": "number",
+      "readonly": true,
+      "description": "Orders or products Katana didn't accept. Each shows why on its Katana tab."
+    },
+    {
+      "id": "adjusted",
+      "label": "Starting stock set",
+      "type": "number",
+      "readonly": true,
+      "description": "Katana variants whose stock was set from Swell"
+    },
+    {
+      "id": "report",
+      "label": "Stock changes",
+      "type": "collection",
+      "readonly": true,
+      "item_label": "product",
+      "description": "Swell products and variants whose stock this sync changed. Up to 2000 rows are kept.",
+      "fields": [
+        {
+          "id": "product",
+          "label": "Product",
+          "type": "short_text",
+          "readonly": true
+        },
+        {
+          "id": "variant",
+          "label": "Variant",
+          "type": "short_text",
+          "readonly": true
+        },
+        {
+          "id": "change",
+          "label": "Change",
+          "type": "number",
+          "readonly": true
+        },
+        {
+          "id": "sku",
+          "label": "SKU",
+          "type": "short_text",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "id": "report_rows",
+      "label": "Stock changes",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "total",
+      "label": "Records to send",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "pages",
+      "label": "Steps",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "page",
+      "label": "Next Katana page",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "last_id",
+      "label": "Last record ID",
+      "type": "short_text",
+      "readonly": true
+    },
+    {
+      "id": "last_error",
+      "label": "Error",
+      "type": "long_text",
+      "readonly": true
+    },
+    {
+      "id": "retries",
+      "label": "Retries",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "date_retry",
+      "label": "Next retry",
+      "type": "date",
+      "readonly": true
+    },
+    {
+      "id": "date_started",
+      "label": "Started",
+      "type": "date",
+      "readonly": true
+    },
+    {
+      "id": "date_completed",
+      "label": "Finished",
+      "type": "date",
+      "readonly": true
+    }
+  ],
+  "views": [
+    {
+      "id": "list",
+      "nav": {
+        "label": "Katana syncs"
+      },
+      "sort": {
+        "date_created": "desc"
+      },
+      "fields": [
+        {
+          "id": "type"
+        },
+        {
+          "id": "status"
+        },
+        {
+          "id": "checked"
+        },
+        {
+          "id": "changed"
+        },
+        {
+          "id": "trigger"
+        },
+        {
+          "id": "date_started"
+        },
+        {
+          "id": "date_completed"
+        }
+      ],
+      "tabs": [
+        {
+          "id": "active",
+          "label": "Active",
+          "query": {
+            "where": {
+              "status": {
+                "$in": [
+                  "pending",
+                  "running",
+                  "waiting"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "id": "manual",
+          "label": "Started from the dashboard",
+          "query": {
+            "where": {
+              "trigger": "manual"
+            }
+          }
+        },
+        {
+          "id": "failed",
+          "label": "Failed",
+          "query": {
+            "where": {
+              "status": "failed"
+            }
+          }
+        }
+      ],
+      "actions": [
+        "new",
+        {
+          "id": "sync_inventory",
+          "label": "Sync all stock",
+          "function": "katana-actions",
+          "loading_label": "Starting the stock sync...",
+          "modal": {
+            "title": "Sync all stock from Katana",
+            "description": "Sets the stock of every Swell product and variant whose SKU is in Katana to the Katana stock at the selected location. Only products with stock tracking on are changed.",
+            "submit_label": "Start"
+          }
+        },
+        {
+          "id": "send_orders",
+          "label": "Send existing orders",
+          "function": "katana-actions",
+          "loading_label": "Starting the order sync...",
+          "modal": {
+            "title": "Send existing orders to Katana",
+            "description": "Creates Katana sales orders for paid orders (or all orders, when orders are sent on submit) that aren't in Katana yet. Canceled orders are skipped. Orders already in Katana are linked, not duplicated.",
+            "submit_label": "Start",
+            "fields": [
+              {
+                "id": "date_from",
+                "label": "Created on or after",
+                "type": "date",
+                "description": "Optional. Leave empty to send every order that isn't in Katana yet."
+              }
+            ]
+          }
+        },
+        {
+          "id": "send_products",
+          "label": "Create products in Katana",
+          "function": "katana-actions",
+          "loading_label": "Starting the product export...",
+          "modal": {
+            "title": "Create products in Katana",
+            "description": "For every Swell product with stock tracking on, creates the Katana product with its variants (matched by SKU; SKUs already in Katana are not created again). Then, for variants that have no stock in Katana at the location, adds a stock adjustment so Katana stock equals the Swell stock. Items without a SKU are skipped. After this, Katana is the source of truth for stock again.",
+            "submit_label": "Create"
+          }
+        }
+      ]
+    },
+    {
+      "id": "new",
+      "fields": [
+        {
+          "id": "type"
+        },
+        {
+          "id": "date_from",
+          "conditions": {
+            "type": "orders"
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit",
+      "title": "Katana sync: {{ record.type }}",
+      "fields": [
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "type",
+              "readonly": true,
+              "admin_span": 2
+            },
+            {
+              "id": "status",
+              "admin_span": 1
+            },
+            {
+              "id": "trigger",
+              "admin_span": 1
+            }
+          ]
+        },
+        {
+          "id": "date_from",
+          "readonly": true,
+          "conditions": {
+            "type": "orders"
+          }
+        },
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "checked",
+              "admin_span": 1
+            },
+            {
+              "id": "changed",
+              "admin_span": 1
+            },
+            {
+              "id": "skipped",
+              "admin_span": 1
+            },
+            {
+              "id": "pages",
+              "admin_span": 1
+            }
+          ]
+        },
+        {
+          "type": "field_row",
+          "conditions": {
+            "type": "inventory"
+          },
+          "fields": [
+            {
+              "id": "not_found",
+              "admin_span": 2
+            },
+            {
+              "id": "page",
+              "admin_span": 2
+            }
+          ]
+        },
+        {
+          "id": "report",
+          "conditions": {
+            "type": "inventory",
+            "report_rows": {
+              "$gt": 0
+            }
+          }
+        },
+        {
+          "type": "field_row",
+          "conditions": {
+            "type": "orders"
+          },
+          "fields": [
+            {
+              "id": "failed",
+              "admin_span": 1
+            },
+            {
+              "id": "total",
+              "admin_span": 1
+            },
+            {
+              "id": "last_id",
+              "admin_span": 2
+            }
+          ]
+        },
+        {
+          "type": "field_row",
+          "conditions": {
+            "type": "products"
+          },
+          "fields": [
+            {
+              "id": "adjusted",
+              "admin_span": 1
+            },
+            {
+              "id": "failed",
+              "admin_span": 1
+            },
+            {
+              "id": "total",
+              "admin_span": 1
+            },
+            {
+              "id": "last_id",
+              "admin_span": 1
+            }
+          ]
+        },
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "date_started",
+              "admin_span": 2
+            },
+            {
+              "id": "date_completed",
+              "admin_span": 2
+            }
+          ]
+        },
+        {
+          "id": "last_error",
+          "conditions": {
+            "last_error": {
+              "$exists": true
+            }
+          }
+        },
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "retries",
+              "admin_span": 1
+            },
+            {
+              "id": "date_retry",
+              "admin_span": 3
+            }
+          ],
+          "conditions": {
+            "retries": {
+              "$gt": 0
+            }
+          }
+        }
+      ],
+      "actions": [
+        {
+          "id": "cancel",
+          "label": "Cancel",
+          "function": "sync-control",
+          "conditions": {
+            "status": {
+              "$in": [
+                "pending",
+                "running",
+                "waiting"
+              ]
+            }
+          },
+          "modal": {
+            "description": "Stops after the current step. Changes already made stay."
+          }
+        },
+        {
+          "id": "resume",
+          "label": "Resume",
+          "function": "sync-control",
+          "conditions": {
+            "status": {
+              "$in": [
+                "failed",
+                "canceled",
+                "waiting"
+              ]
+            }
+          },
+          "modal": {
+            "description": "Failed and canceled syncs continue where they stopped. A waiting sync retries now instead of at its retry time."
+          }
+        }
+      ]
+    }
+  ]
+}

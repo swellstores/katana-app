@@ -1,0 +1,169 @@
+{
+  "$schema": "https://json.swell.store/setting.json",
+  "label": "Katana",
+  "description": "Send Swell orders to Katana as sales orders, and every 5 minutes bring status, tracking and stock changes back to Swell. Create an API key in Katana → Settings → API → API keys. Jobs are listed under Katana syncs and checks under Katana checks in the dashboard sidebar.",
+  "actions": [
+    {
+      "id": "test_connection",
+      "label": "Test connection",
+      "function": "katana-actions",
+      "loading_label": "Checking Katana…",
+      "hint": "Checks the API key and lists your Katana locations and tax rates with their IDs. Save settings first."
+    },
+    {
+      "id": "check_now",
+      "label": "Check Katana now",
+      "function": "katana-actions",
+      "loading_label": "Checking Katana…",
+      "hint": "Looks for sales order and stock changes in Katana right away, instead of waiting for the 5-minute check. Checks that change something are logged under Katana checks."
+    },
+    {
+      "id": "sync_inventory",
+      "label": "Sync inventory now",
+      "function": "katana-actions",
+      "loading_label": "Starting the stock sync…",
+      "hint": "Starts a job that copies all Katana stock at the location to Swell, page by page. Follow it under Katana syncs in the sidebar."
+    },
+    {
+      "id": "send_products",
+      "label": "Create products in Katana",
+      "function": "katana-actions",
+      "loading_label": "Starting the product export…",
+      "hint": "Creates Katana products and variants for Swell products with stock tracking on, and sets their starting stock in Katana to the Swell stock. Follow it under Katana syncs.",
+      "modal": {
+        "title": "Create products in Katana",
+        "description": "For every Swell product with stock tracking on, creates the Katana product with its variants (matched by SKU; SKUs already in Katana are not created again). Then, for variants that have no stock in Katana at the location, adds a stock adjustment so Katana stock equals the Swell stock. Items without a SKU are skipped. After this, Katana is the source of truth for stock again.",
+        "submit_label": "Create"
+      }
+    }
+  ],
+  "fields": [
+    {
+      "id": "api_key",
+      "label": "API key",
+      "type": "short_text",
+      "description": "Required. Katana → Settings → API → API keys → Add new API key"
+    },
+    {
+      "id": "location_id",
+      "label": "Location ID",
+      "type": "number",
+      "description": "Required for syncing. Katana location that ships Swell orders and whose stock is copied to Swell. Save the API key, then use Test connection to see the IDs."
+    },
+    {
+      "id": "tax_rate_id",
+      "label": "Tax rate ID",
+      "type": "number",
+      "description": "Optional. Katana tax rate set on every sales order row and the shipping fee. Leave empty to use Katana's default."
+    },
+    {
+      "id": "sync_on",
+      "label": "Send orders to Katana when",
+      "type": "select",
+      "default": "paid",
+      "options": [
+        {
+          "value": "paid",
+          "label": "Order is paid"
+        },
+        {
+          "value": "submitted",
+          "label": "Order is submitted"
+        }
+      ]
+    },
+    {
+      "id": "order_no_prefix",
+      "label": "Sales order number prefix",
+      "type": "short_text",
+      "description": "Katana sales order number is this prefix followed by the Swell order number, e.g. SW-1001",
+      "default": "SW-"
+    },
+    {
+      "id": "on_cancel",
+      "label": "When a Swell order is canceled",
+      "type": "select",
+      "default": "delete",
+      "options": [
+        {
+          "value": "delete",
+          "label": "Delete the Katana sales order (if not shipped yet)"
+        },
+        {
+          "value": "none",
+          "label": "Do nothing"
+        }
+      ]
+    },
+    {
+      "id": "create_fulfillment",
+      "label": "Create Swell shipment when delivered in Katana",
+      "type": "boolean",
+      "ui": "toggle",
+      "description": "Fulfills the Swell order with the tracking number from Katana",
+      "default": true
+    },
+    {
+      "id": "sync_inventory",
+      "label": "Sync inventory from Katana",
+      "type": "boolean",
+      "ui": "toggle",
+      "description": "Sets Swell stock levels from Katana by SKU: every 5 minutes for items that moved, plus an hourly stock sync job. Only products with stock tracking on are changed.",
+      "default": true
+    },
+    {
+      "id": "stock_quantity",
+      "label": "Stock quantity to use",
+      "type": "select",
+      "default": "available",
+      "options": [
+        {
+          "value": "available",
+          "label": "In stock minus committed"
+        },
+        {
+          "value": "in_stock",
+          "label": "In stock"
+        }
+      ]
+    },
+    {
+      "id": "sync_page_size",
+      "label": "Sync job page size",
+      "type": "number",
+      "default": 50,
+      "min": 1,
+      "max": 250,
+      "description": "Katana inventory rows or Swell orders read per step of a Katana sync job (1-250). Each step also stops after about 7 seconds and the next step continues."
+    },
+    {
+      "type": "field_row",
+      "fields": [
+        {
+          "id": "orders_checked_at",
+          "label": "Sales orders last checked",
+          "type": "short_text",
+          "readonly": true,
+          "admin_span": 2,
+          "description": "When the last 5-minute check of sales orders finished. The next one reads changes from a minute before."
+        },
+        {
+          "id": "stock_checked_at",
+          "label": "Stock last checked",
+          "type": "short_text",
+          "readonly": true,
+          "admin_span": 2,
+          "description": "When the last 5-minute check of stock movements finished. The next one reads changes from a minute before."
+        }
+      ]
+    },
+    {
+      "id": "enabled",
+      "label": "Enabled",
+      "type": "boolean",
+      "ui": "toggle",
+      "description": "Turns off all syncing without uninstalling the app",
+      "default": true
+    }
+  ]
+}

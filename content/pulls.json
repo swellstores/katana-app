@@ -1,0 +1,268 @@
+{
+  "$schema": "https://json.swell.store/content.json",
+  "collection": "pulls",
+  "label": "Katana checks",
+  "description": "Each record is one 5-minute check that changed something in Swell, or one that continues on the next run",
+  "fields": [
+    {
+      "id": "source",
+      "label": "Checked",
+      "type": "select",
+      "readonly": true,
+      "options": [
+        {
+          "value": "sales_orders",
+          "label": "Sales orders"
+        },
+        {
+          "value": "inventory",
+          "label": "Stock"
+        }
+      ]
+    },
+    {
+      "id": "status",
+      "label": "Status",
+      "type": "select",
+      "readonly": true,
+      "options": [
+        {
+          "value": "running",
+          "label": "Continues next run"
+        },
+        {
+          "value": "completed",
+          "label": "Completed"
+        }
+      ]
+    },
+    {
+      "id": "changed",
+      "label": "Updated in Swell",
+      "type": "number",
+      "readonly": true,
+      "description": "Swell orders (status, tracking, shipment) or stock levels updated"
+    },
+    {
+      "id": "not_found",
+      "label": "Not in Swell",
+      "type": "number",
+      "readonly": true,
+      "description": "Sales orders without a Swell order, or moved SKUs with no Swell product or variant"
+    },
+    {
+      "id": "failed",
+      "label": "Failed",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "report",
+      "label": "Stock changes",
+      "type": "collection",
+      "readonly": true,
+      "item_label": "product",
+      "description": "Swell products and variants whose stock this check changed. Up to 2000 rows are kept.",
+      "fields": [
+        {
+          "id": "product",
+          "label": "Product",
+          "type": "short_text",
+          "readonly": true
+        },
+        {
+          "id": "variant",
+          "label": "Variant",
+          "type": "short_text",
+          "readonly": true
+        },
+        {
+          "id": "change",
+          "label": "Change",
+          "type": "number",
+          "readonly": true
+        },
+        {
+          "id": "sku",
+          "label": "SKU",
+          "type": "short_text",
+          "readonly": true
+        }
+      ]
+    },
+    {
+      "id": "date_cursor",
+      "label": "Read changes made after",
+      "type": "date",
+      "readonly": true
+    },
+    {
+      "id": "date_pass_started",
+      "label": "Started",
+      "type": "date",
+      "readonly": true
+    },
+    {
+      "id": "date_completed",
+      "label": "Finished",
+      "type": "date",
+      "readonly": true
+    },
+    {
+      "id": "page",
+      "label": "Continues at Katana page",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "last_error",
+      "label": "Last error",
+      "type": "long_text",
+      "readonly": true
+    },
+    {
+      "id": "date_last_error",
+      "label": "Last error at",
+      "type": "date",
+      "readonly": true
+    }
+  ],
+  "views": [
+    {
+      "id": "list",
+      "nav": {
+        "label": "Katana checks"
+      },
+      "actions": [
+        {
+          "id": "hide_actions",
+          "link": "#",
+          "hidden": true
+        }
+      ],
+      "sort": {
+        "date_created": "desc"
+      },
+      "fields": [
+        {
+          "id": "source"
+        },
+        {
+          "id": "status"
+        },
+        {
+          "id": "changed"
+        },
+        {
+          "id": "not_found"
+        },
+        {
+          "id": "failed"
+        },
+        {
+          "id": "date_pass_started"
+        },
+        {
+          "id": "date_completed"
+        }
+      ],
+      "tabs": [
+        {
+          "id": "errors",
+          "label": "With errors",
+          "query": {
+            "where": {
+              "last_error": {
+                "$exists": true
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "edit",
+      "title": "Katana check: {{ record.source }}",
+      "fields": [
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "source",
+              "admin_span": 2
+            },
+            {
+              "id": "status",
+              "admin_span": 2
+            }
+          ]
+        },
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "changed",
+              "admin_span": 1
+            },
+            {
+              "id": "not_found",
+              "admin_span": 1
+            },
+            {
+              "id": "failed",
+              "admin_span": 2
+            }
+          ]
+        },
+        {
+          "id": "report",
+          "conditions": {
+            "source": "inventory",
+            "changed": {
+              "$gt": 0
+            }
+          }
+        },
+        {
+          "type": "field_row",
+          "fields": [
+            {
+              "id": "date_cursor",
+              "admin_span": 2
+            },
+            {
+              "id": "date_pass_started",
+              "admin_span": 1
+            },
+            {
+              "id": "date_completed",
+              "admin_span": 1
+            }
+          ]
+        },
+        {
+          "id": "page",
+          "conditions": {
+            "status": "running"
+          }
+        },
+        {
+          "id": "last_error",
+          "conditions": {
+            "last_error": {
+              "$exists": true
+            }
+          }
+        },
+        {
+          "id": "date_last_error",
+          "conditions": {
+            "last_error": {
+              "$exists": true
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

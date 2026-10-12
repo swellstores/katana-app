@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.swell.store/model.json",
+  "collection": "accounts",
+  "description": "Katana customer stored on accounts",
+  "fields": {
+    "katana_customer_id": {
+      "type": "int",
+      "description": "Katana customer matched or created for this account"
+    }
+  }
+}

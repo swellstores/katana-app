@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json.swell.store/model.json",
+  "collection": "orders",
+  "description": "Katana sales order data stored on orders",
+  "fields": {
+    "katana_sales_order_id": {
+      "type": "int",
+      "description": "Katana sales order ID"
+    },
+    "katana_order_no": {
+      "type": "string",
+      "description": "Katana sales order number"
+    },
+    "katana_customer_id": {
+      "type": "int",
+      "description": "Katana customer the sales order belongs to"
+    },
+    "katana_status": {
+      "type": "string",
+      "description": "Katana sales order status (NOT_SHIPPED, PACKED, DELIVERED, DELETED)"
+    },
+    "katana_tracking_number": {
+      "type": "string"
+    },
+    "katana_tracking_url": {
+      "type": "string"
+    },
+    "katana_shipment_id": {
+      "type": "objectid",
+      "description": "Swell shipment created when the sales order was delivered in Katana"
+    },
+    "katana_synced_at": {
+      "type": "date",
+      "description": "Last time the order was sent to or updated from Katana"
+    },
+    "katana_error": {
+      "type": "string"
+    }
+  }
+}

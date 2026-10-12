@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.swell.store/content.json",
+  "collection": "products",
+  "description": "Katana stock sync details on products",
+  "fields": [
+    {
+      "id": "katana_stock_synced_at",
+      "label": "Stock last set from Katana",
+      "type": "datetime",
+      "readonly": true
+    },
+    {
+      "id": "katana_error",
+      "label": "Error",
+      "type": "long_text",
+      "readonly": true
+    }
+  ],
+  "views": [
+    {
+      "id": "edit",
+      "tabs": [
+        {
+          "id": "katana",
+          "label": "Katana",
+          "fields": [
+            {
+              "id": "katana_stock_synced_at"
+            },
+            {
+              "id": "katana_error"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

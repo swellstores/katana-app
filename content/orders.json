@@ -1,0 +1,130 @@
+{
+  "$schema": "https://json.swell.store/content.json",
+  "collection": "orders",
+  "description": "Katana sales order details on orders",
+  "fields": [
+    {
+      "id": "katana_order_no",
+      "label": "Sales order",
+      "type": "short_text",
+      "readonly": true
+    },
+    {
+      "id": "katana_sales_order_id",
+      "label": "Sales order ID",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "katana_status",
+      "label": "Status",
+      "type": "short_text",
+      "readonly": true
+    },
+    {
+      "id": "katana_customer_id",
+      "label": "Customer ID",
+      "type": "number",
+      "readonly": true
+    },
+    {
+      "id": "katana_tracking_number",
+      "label": "Tracking number",
+      "type": "short_text",
+      "readonly": true
+    },
+    {
+      "id": "katana_tracking_url",
+      "label": "Tracking page",
+      "type": "short_text",
+      "readonly": true
+    },
+    {
+      "id": "katana_synced_at",
+      "label": "Last synced",
+      "type": "datetime",
+      "readonly": true
+    },
+    {
+      "id": "katana_error",
+      "label": "Error",
+      "type": "long_text",
+      "readonly": true
+    }
+  ],
+  "views": [
+    {
+      "id": "list",
+      "fields": [
+        {
+          "id": "katana_status",
+          "label": "Katana"
+        }
+      ]
+    },
+    {
+      "id": "edit",
+      "extra_actions": [
+        {
+          "id": "send_order",
+          "label": "Send to Katana",
+          "function": "katana-actions",
+          "loading_label": "Sending to Katana…",
+          "hint": "Creates the Katana sales order now, e.g. after fixing a missing SKU"
+        }
+      ],
+      "tabs": [
+        {
+          "id": "katana",
+          "label": "Katana",
+          "fields": [
+            {
+              "type": "field_row",
+              "fields": [
+                {
+                  "id": "katana_order_no",
+                  "admin_span": 2
+                },
+                {
+                  "id": "katana_status",
+                  "admin_span": 2
+                }
+              ]
+            },
+            {
+              "type": "field_row",
+              "fields": [
+                {
+                  "id": "katana_tracking_number",
+                  "admin_span": 2
+                },
+                {
+                  "id": "katana_tracking_url",
+                  "admin_span": 2
+                }
+              ]
+            },
+            {
+              "type": "field_row",
+              "fields": [
+                {
+                  "id": "katana_sales_order_id"
+                },
+                {
+                  "id": "katana_customer_id"
+                },
+                {
+                  "id": "katana_synced_at",
+                  "admin_span": 2
+                }
+              ]
+            },
+            {
+              "id": "katana_error"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

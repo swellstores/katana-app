@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json.swell.store/model.json",
+  "collection": "syncs",
+  "label": "Katana syncs",
+  "description": "Katana sync jobs: stock from Katana, existing orders to Katana, or Swell products to Katana, run step by step",
+  "name_pattern": "{type}",
+  "fields": {
+    "type": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "inventory",
+        "orders",
+        "products"
+      ],
+      "description": "inventory: set Swell stock from all Katana inventory at the location; orders: send existing Swell orders to Katana; products: create Katana products for Swell products with stock tracking on, with starting stock"
+    },
+    "trigger": {
+      "type": "string",
+      "default": "manual",
+      "enum": [
+        "manual",
+        "schedule"
+      ],
+      "description": "manual: started from the dashboard; schedule: started by the hourly stock sync"
+    },
+    "status": {
+      "type": "string",
+      "default": "pending",
+      "enum": [
+        "pending",
+        "running",
+        "waiting",
+        "completed",
+        "failed",
+        "canceled"
+      ]
+    },
+    "date_from": {
+      "type": "date",
+      "description": "Orders only: send orders created on or after this date"
+    },
+    "page": {
+      "type": "int",
+      "description": "Inventory: Katana inventory page the next step reads"
+    },
+    "last_id": {
+      "type": "string",
+      "description": "Orders and products: ID of the last Swell record handled; the next step starts after it"
+    },
+    "pages": {
+      "type": "int",
+      "default": 0,
+      "description": "Steps run so far"
+    },
+    "checked": {
+      "type": "int",
+      "default": 0,
+      "description": "Katana items, Swell orders or Swell products looked at"
+    },
+    "changed": {
+      "type": "int",
+      "default": 0,
+      "description": "Swell stock levels changed, orders sent to Katana, or Katana products created (or given new variants)"
+    },
+    "skipped": {
+      "type": "int",
+      "default": 0,
+      "description": "Stock: items without SKU or with stock tracking off. Orders: nothing to ship. Products: items without a SKU"
+    },
+    "not_found": {
+      "type": "int",
+      "default": 0,
+      "description": "Katana SKUs with no Swell product or variant"
+    },
+    "failed": {
+      "type": "int",
+      "default": 0,
+      "description": "Orders or products Katana didn't accept (the error is saved on the record)"
+    },
+    "adjusted": {
+      "type": "int",
+      "default": 0,
+      "description": "Products: Katana variants whose starting stock was set from Swell"
+    },
+    "report": {
+      "type": "array",
+      "value_type": "object",
+      "description": "Swell stock levels changed by this stock sync, one row per product or variant (up to 2000 rows)",
+      "fields": {
+        "product": {
+          "type": "string",
+          "description": "Swell product name"
+        },
+        "variant": {
+          "type": "string",
+          "description": "Swell variant name, empty for a product without variants"
+        },
+        "change": {
+          "type": "float",
+          "description": "Stock change in Swell (new level minus old level)"
+        },
+        "sku": {
+          "type": "string"
+        }
+      }
+    },
+    "report_rows": {
+      "type": "int",
+      "default": 0,
+      "description": "Swell stock levels changed by this stock sync, including any beyond the 2000 rows kept"
+    },
+    "total": {
+      "type": "int",
+      "description": "Orders or products to send, counted on the first step"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "retries": {
+      "type": "int",
+      "default": 0,
+      "description": "Automatic retries after rate limits or Katana errors"
+    },
+    "date_retry": {
+      "type": "date",
+      "description": "When a waiting job is retried"
+    },
+    "date_started": {
+      "type": "date"
+    },
+    "date_completed": {
+      "type": "date"
+    }
+  },
+  "events": {
+    "types": [
+      {
+        "id": "created"
+      },
+      {
+        "id": "updated"
+      },
+      {
+        "id": "deleted"
+      }
+    ]
+  }
+}

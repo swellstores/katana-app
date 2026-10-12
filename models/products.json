@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json.swell.store/model.json",
+  "collection": "products",
+  "description": "Katana stock sync data stored on products",
+  "fields": {
+    "katana_stock_synced_at": {
+      "type": "date",
+      "description": "Last time stock was set from Katana"
+    },
+    "katana_error": {
+      "type": "string",
+      "description": "Last stock sync error"
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "description": "Sync Swell orders and inventory with Katana Cloud Inventory",
+  "devDependencies": {
+    "@swell/app-types": "^1.2.0",
+    "typescript": "^5.9.3",
+    "@cloudflare/vitest-pool-workers": "~0.12.21",
+    "vitest": "3.2.x",
+    "@swell/apps-sdk": "2.0.0-alpha.0"
+  },
+  "name": "katana",
+  "private": true,
+  "scripts": {
+    "typecheck": "([ -z \"$(find functions -name '*.ts' 2>/dev/null | head -1)\" ] || tsc --noEmit) && ([ ! -f test/tsconfig.json ] || tsc --build --noEmit test) && ([ ! -f frontend/tsconfig.json ] || tsc --build --noEmit frontend)",
+    "test": "vitest run"
+  },
+  "version": "1.0.0",
+  "workspaces": [
+    "frontend"
+  ]
+}

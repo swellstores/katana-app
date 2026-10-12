@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json.swell.store/model.json",
+  "collection": "pulls",
+  "label": "Katana checks",
+  "description": "One record per 5-minute check that changed something in Swell, or that continues on the next run",
+  "name_pattern": "{source}",
+  "fields": {
+    "source": {
+      "type": "string",
+      "required": true,
+      "enum": [
+        "sales_orders",
+        "inventory"
+      ],
+      "description": "sales_orders: status and tracking of sales orders; inventory: stock of items that moved"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "running",
+        "completed"
+      ],
+      "description": "running: the check continues on the next run (out of time or a retryable error); completed: done"
+    },
+    "changed": {
+      "type": "int",
+      "default": 0,
+      "description": "Swell orders or stock levels updated in this check"
+    },
+    "not_found": {
+      "type": "int",
+      "default": 0,
+      "description": "Sales orders without a Swell order, or SKUs not in Swell"
+    },
+    "failed": {
+      "type": "int",
+      "default": 0,
+      "description": "Changes that couldn't be applied in this check"
+    },
+    "report": {
+      "type": "array",
+      "value_type": "object",
+      "description": "Swell stock levels changed by this check, one row per product or variant (up to 2000 rows)",
+      "fields": {
+        "product": {
+          "type": "string",
+          "description": "Swell product name"
+        },
+        "variant": {
+          "type": "string",
+          "description": "Swell variant name, empty for a product without variants"
+        },
+        "change": {
+          "type": "float",
+          "description": "Stock change in Swell (new level minus old level)"
+        },
+        "sku": {
+          "type": "string"
+        }
+      }
+    },
+    "report_rows": {
+      "type": "int",
+      "default": 0,
+      "description": "Swell stock levels changed by this check, including any beyond the 2000 rows kept"
+    },
+    "date_cursor": {
+      "type": "date",
+      "description": "The check reads Katana changes made after this time"
+    },
+    "date_pass_started": {
+      "type": "date",
+      "description": "When the check started; the next check reads changes from here (minus a short overlap)"
+    },
+    "page": {
+      "type": "int",
+      "description": "Katana page a running check continues at"
+    },
+    "date_completed": {
+      "type": "date"
+    },
+    "last_error": {
+      "type": "string"
+    },
+    "date_last_error": {
+      "type": "date"
+    }
+  },
+  "events": {
+    "types": [
+      {
+        "id": "created"
+      },
+      {
+        "id": "updated"
+      },
+      {
+        "id": "deleted"
+      }
+    ]
+  }
+}
