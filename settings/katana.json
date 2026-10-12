@@ -41,7 +41,7 @@
     {
       "id": "api_key",
       "label": "API key",
-      "type": "short_text",
+      "type": "secret",
       "description": "Required. Katana → Settings → API → API keys → Add new API key"
     },
     {

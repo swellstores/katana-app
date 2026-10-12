@@ -7,28 +7,28 @@
 	"permissions": [],
 	"images": [
 		{
-			"id": "orders-to-katana",
-			"title": "Orders become Katana sales orders",
-			"description": "Paid orders are created in Katana with the customer, addresses, items matched by SKU, and shipping.",
-			"image_src": "assets/screenshots/1-orders-to-katana.png"
+			"id": "settings",
+			"title": "Connected in a few minutes",
+			"description": "Paste a Katana API key and pick the location that ships your orders.",
+			"image_src": "assets/screenshots/1-settings.png"
 		},
 		{
-			"id": "katana-tab-on-orders",
-			"title": "Katana status on every order",
-			"description": "A Katana tab shows the sales order, status, tracking and any error, with Send to Katana to retry.",
-			"image_src": "assets/screenshots/2-katana-tab-on-orders.png"
+			"id": "katana-tasks",
+			"title": "Big syncs, step by step",
+			"description": "Sync all stock from Katana, send existing orders, or create your products in Katana, with live progress.",
+			"image_src": "assets/screenshots/2-katana-tasks.png"
+		},
+		{
+			"id": "katana-pulls",
+			"title": "Updates from Katana every 5 minutes",
+			"description": "Order status, tracking and stock come back to Swell on their own, and every change is logged.",
+			"image_src": "assets/screenshots/3-katana-pulls.png"
 		},
 		{
 			"id": "stock-from-katana",
-			"title": "Stock levels from Katana",
-			"description": "Swell stock follows Katana inventory for your selling location, by webhook and an hourly sync.",
-			"image_src": "assets/screenshots/3-stock-from-katana.png"
-		},
-		{
-			"id": "setup",
-			"title": "Connected in a few minutes",
-			"description": "Paste a Katana API key, pick a location, and register the webhook from the app settings.",
-			"image_src": "assets/screenshots/4-setup.png"
+			"title": "Stock that follows Katana",
+			"description": "Swell stock is adjusted to Katana inventory at your location, with a note on every change.",
+			"image_src": "assets/screenshots/4-stock-from-katana.png"
 		}
 	]
 }

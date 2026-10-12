@@ -38,7 +38,7 @@ All credentials and options are app settings (`settings/katana.json`). Nothing i
 
 | Setting | Required | Default | Description |
 |---|---|---|---|
-| API key | yes | | Katana API key (Katana → Settings → API → API keys). |
+| API key | yes | | Katana API key (Katana → Settings → API → API keys). A secret field: masked in the dashboard, with show and copy buttons. |
 | Location ID | yes | | Katana location that ships Swell orders. Its stock is copied to Swell. **Test connection** lists the IDs. |
 | Tax rate ID | no | | Katana tax rate set on every sales order row and on the shipping fee. If empty, Katana uses its default. |
 | Send orders to Katana when | no | Order is paid | `Order is paid` (`order.paid`) or `Order is submitted` (`order.submitted`). |
@@ -174,4 +174,15 @@ swell logs --type function -s order-events
 - **Actions** can only be run by a dashboard user. `swell api` can't call them.
 - **Settings writes:** the app saves the last check times with `PUT /settings/katana`. That request is validated against the settings schema, which is one reason no setting is marked required.
 - **Test scaffold:** `@cloudflare/vitest-pool-workers` is pinned to `~0.12.21`, the last version that works with vitest 3.2. `test/helpers/mock-request.ts` was adjusted so it type-checks (the scaffold spreads `URLSearchParams`, which the workers lib doesn't type as iterable).
-- **Assets:** `assets/icon.png` is a 512×512 placeholder icon (square corners). `assets/screenshots/*.png` are 3200×1800 placeholders referenced from `images` in `swell.json`; replace them with real dashboard screenshots before release.
+- **Assets:**
+  - `assets/icon.png` is Katana's official app icon ("kt" on lime), 512×512 PNG. It's Katana's trademark, used to identify the integration.
+  - `assets/screenshots/` holds the four listing images referenced from `images` in `swell.json`, 3200×1800 PNG each, in the same style as the other Swell integration listings (headline, recreated dashboard, numbered callouts):
+
+    | File | Title | Shows |
+    |---|---|---|
+    | `1-settings.png` | Connected in a few minutes | App settings with the API key (secret field) and Location ID |
+    | `2-katana-tasks.png` | Big syncs, step by step | **Katana tasks** list with the three start buttons and task progress |
+    | `3-katana-pulls.png` | Updates from Katana every 5 minutes | **Katana pulls** list with the stock and sales order checks |
+    | `4-stock-from-katana.png` | Stock that follows Katana | A product's stock history with a "Katana stock sync (location …)" adjustment |
+
+
