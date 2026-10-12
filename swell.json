@@ -5,6 +5,10 @@
 	"type": "integration",
 	"version": "1.0.0",
 	"permissions": [],
+	"support_email": "support@swell.is",
+	"integrations": [
+		"katana"
+	],
 	"images": [
 		{
 			"id": "settings",
