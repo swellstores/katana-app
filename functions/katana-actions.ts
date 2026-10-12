@@ -24,6 +24,9 @@ export default async function (req: SwellRequest) {
   if (!settings.api_key?.trim()) {
     return { message: 'Enter the Katana API key and save the settings first.' };
   }
+  if (settings.enabled === false && actionId !== 'test_connection') {
+    return { message: 'The Katana app is turned off. Turn on "Enabled" in the app settings first.' };
+  }
 
   switch (actionId) {
     case 'test_connection':
@@ -134,6 +137,9 @@ async function sendOrderAction(req: SwellRequest, settings: KatanaSettings) {
     throw new SwellError('Order not found', { status: 404 });
   }
 
+  if (order.canceled) {
+    return { message: 'This order is canceled, so it was not sent.' };
+  }
   const appData = getAppData(order, req.appId);
   if (appData.katana_sales_order_id && appData.katana_status !== 'DELETED') {
     return { message: `Already in Katana as sales order ${appData.katana_order_no}.` };

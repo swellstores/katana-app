@@ -130,11 +130,12 @@ export async function inventoryStep(ctx: SyncContext, job: Job, deadline: number
   return { update };
 }
 
-// Swell orders an order sync sends: not canceled, not sent yet, paid (unless orders go on submit),
-// created on or after `date_from`, after `last_id`
+// Swell orders an order sync sends: not canceled, not delivered, not sent yet, paid (unless orders go on
+// submit), created on or after `date_from`, after `last_id`. Delivered orders would only commit stock in Katana.
 export function ordersQuery(ctx: SyncContext, job: Job, limit: number): Record<string, any> {
   const where: Record<string, any> = {
     canceled: { $ne: true },
+    delivered: { $ne: true },
     [`$app.${ctx.appId}.katana_sales_order_id`]: null,
   };
   if (ctx.settings.sync_on !== 'submitted') {

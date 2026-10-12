@@ -164,11 +164,12 @@ describe("inventoryStep", () => {
 });
 
 describe("ordersQuery", () => {
-  it("selects paid, uncanceled orders not in Katana, after the cursor", () => {
+  it("selects paid, uncanceled, undelivered orders not in Katana, after the cursor", () => {
     const query = ordersQuery(ctx({}), job({ type: "orders", date_from: "2026-01-01", last_id: "abc" }), 25);
     expect(query).toEqual({
       where: {
         canceled: { $ne: true },
+        delivered: { $ne: true },
         "$app.katana.katana_sales_order_id": null,
         paid: true,
         date_created: { $gte: "2026-01-01" },

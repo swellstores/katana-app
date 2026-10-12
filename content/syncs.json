@@ -310,14 +310,14 @@
           "loading_label": "Starting the order sync...",
           "modal": {
             "title": "Send existing orders to Katana",
-            "description": "Creates Katana sales orders for paid orders (or all orders, when orders are sent on submit) that aren't in Katana yet. Canceled orders are skipped. Orders already in Katana are linked, not duplicated.",
+            "description": "Creates Katana sales orders for paid orders (or all orders, when orders are sent on submit) that aren't in Katana yet. Canceled and delivered orders are skipped. Orders already in Katana are linked, not duplicated.",
             "submit_label": "Start",
             "fields": [
               {
                 "id": "date_from",
                 "label": "Created on or after",
                 "type": "date",
-                "description": "Optional. Leave empty to send every order that isn't in Katana yet."
+                "description": "Optional. Leave empty to send every undelivered order that isn't in Katana yet. Each sales order commits stock in Katana until it's delivered there, so set a date to skip old orders."
               }
             ]
           }

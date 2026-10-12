@@ -47,6 +47,25 @@ describe("katana-actions", () => {
     expect(await handler(req)).toEqual({ message: "Enter the Katana API key and save the settings first." });
   });
 
+  it.each(["check_now", "sync_inventory", "send_orders", "send_products", "send_order"])(
+    "does not run %s when the app is disabled",
+    async (action) => {
+      const { req, put, post } = setup({ action, settings: { ...SETTINGS, enabled: false } });
+      expect(await handler(req)).toEqual({
+        message: 'The Katana app is turned off. Turn on "Enabled" in the app settings first.',
+      });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
+      expect(post).not.toHaveBeenCalled();
+    },
+  );
+
+  it("still tests the connection when the app is disabled", async () => {
+    stub({ "GET /locations": { data: [{ id: 7, name: "Main" }] }, "GET /tax_rates": { data: [{ id: 3, name: "Exempt" }] } });
+    const { req } = setup({ settings: { ...SETTINGS, enabled: false } });
+    expect(((await handler(req)) as { message: string }).message).toContain("Connected to Katana.");
+  });
+
   it("rejects unknown actions", async () => {
     const { req } = setup({ action: "nope" });
     await expect(handler(req)).rejects.toMatchObject({ status: 400 });
@@ -185,6 +204,17 @@ describe("katana-actions", () => {
       const order = makeOrder({ $app: { katana: { katana_sales_order_id: 900, katana_order_no: "SW-100506" } } });
       const { req } = setup({ action: "send_order", data: sendData, order });
       expect(await handler(req)).toEqual({ message: "Already in Katana as sales order SW-100506." });
+    });
+
+    it.each([
+      ["never sent", {}],
+      ["whose sales order was deleted", { katana: { katana_sales_order_id: 900, katana_status: "DELETED" } }],
+    ])("does not send a canceled order %s", async (_name, app) => {
+      const order = makeOrder({ canceled: true, $app: app });
+      const { req, put } = setup({ action: "send_order", data: sendData, order });
+      expect(await handler(req)).toEqual({ message: "This order is canceled, so it was not sent." });
+      expect(fetchMock).not.toHaveBeenCalled();
+      expect(put).not.toHaveBeenCalled();
     });
 
     it("skips orders with nothing to ship", async () => {

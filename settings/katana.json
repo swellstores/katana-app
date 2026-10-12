@@ -134,7 +134,7 @@
       "default": 50,
       "min": 1,
       "max": 250,
-      "description": "Katana inventory rows or Swell orders read per step of a Katana sync job (1-250). Each step also stops after about 7 seconds and the next step continues."
+      "description": "Katana inventory rows, Swell orders or Swell products read per step of a Katana sync job (1-250; product exports use at most 100). Each step also stops after about 7 seconds and the next step continues."
     },
     {
       "type": "field_row",
@@ -145,7 +145,7 @@
           "type": "short_text",
           "readonly": true,
           "admin_span": 2,
-          "description": "When the last 5-minute check of sales orders finished. The next one reads changes from a minute before."
+          "description": "When the last completed 5-minute check of sales orders started. The next one reads changes from a minute before that."
         },
         {
           "id": "stock_checked_at",
@@ -153,7 +153,7 @@
           "type": "short_text",
           "readonly": true,
           "admin_span": 2,
-          "description": "When the last 5-minute check of stock movements finished. The next one reads changes from a minute before."
+          "description": "When the last completed 5-minute check of stock movements started. The next one reads changes from a minute before that."
         }
       ]
     },
@@ -162,7 +162,7 @@
       "label": "Enabled",
       "type": "boolean",
       "ui": "toggle",
-      "description": "Turns off all syncing without uninstalling the app",
+      "description": "Turns off all syncing and the sync actions without uninstalling the app (Test connection still works)",
       "default": true
     }
   ]

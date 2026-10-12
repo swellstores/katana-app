@@ -100,7 +100,7 @@ export function hasCredentials(settings: KatanaSettings): boolean {
   return Boolean(settings.api_key?.trim() && settings.location_id);
 }
 
-// rows or orders per sync job step: 1-250, default 50
+// rows or orders per sync job step: 1-250, default 50 (product exports use at most 100)
 export function syncPageSize(settings: KatanaSettings): number {
   const size = Math.floor(Number(settings.sync_page_size));
   return Number.isFinite(size) && size > 0 ? Math.min(size, 250) : 50;
