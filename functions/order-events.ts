@@ -1,5 +1,5 @@
 import { getAppData, getKatanaSettings, hasCredentials, isRetryable } from './lib/katana';
-import { MissingSkuError, katanaItems } from './lib/mapping';
+import { SkuError, katanaItems } from './lib/mapping';
 import { cancelOrder, getOrder, sendOrder } from './lib/orders';
 
 export const config: SwellConfig = {
@@ -79,8 +79,8 @@ export default async function (req: SwellRequest) {
     console.error(`Katana: failed to send order ${order.number} - ${message}`);
     await swell.put(`/orders/${orderId}`, req.appValues({ katana_error: message }));
 
-    // missing SKUs and 4xx mean the data or settings are wrong; retrying won't help
-    if (err instanceof MissingSkuError || !isRetryable(err)) {
+    // missing or duplicate SKUs and 4xx mean the data or settings are wrong; retrying won't help
+    if (err instanceof SkuError || !isRetryable(err)) {
       return;
     }
     throw new SwellError(message, { status: 502, retry: true });

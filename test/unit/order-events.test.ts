@@ -128,6 +128,37 @@ describe("order-events", () => {
     expect(put.mock.calls.at(-1)[1].$app.katana.katana_sales_order_id).toBe(900);
   });
 
+  it("records a SKU on more than one Swell product or variant without retrying", async () => {
+    stub(createRoutes);
+    const put = vi.fn().mockResolvedValue({});
+    const req = createMockRequest({
+      data: { id: ORDER_ID, $event: { type: "order.paid" } } as any,
+      appId: "katana",
+      store: { id: "onixo" } as any,
+      swell: {
+        settings: vi.fn().mockResolvedValue({ katana: SETTINGS }),
+        get: routeGet({
+          [`/orders/${ORDER_ID}`]: makeOrder(),
+          "/products:variants": {
+            results: [
+              { id: "v_a", parent_id: "p_a", sku: "ETH-YIRG-1K-ESP" },
+              { id: "v_b", parent_id: "p_b", sku: "ETH-YIRG-1K-ESP" },
+            ],
+          },
+          "/products": { results: [] },
+        }),
+        put,
+      },
+    });
+
+    await expect(handler(req)).resolves.toBeUndefined();
+    expect(put).toHaveBeenCalledWith(
+      `/orders/${ORDER_ID}`,
+      appValues({ katana_error: "Same SKU on more than one Swell product or variant: ETH-YIRG-1K-ESP" }),
+    );
+    expect(katanaCalls(fetchMock)).not.toContain("POST /sales_orders");
+  });
+
   it("records missing SKUs on the order without retrying", async () => {
     stub({ "GET /sales_orders": { data: [] }, "GET /variants": { data: [] } });
     const { req, put } = setup();

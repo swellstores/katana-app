@@ -1,6 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
+  DuplicateSkuError,
   MissingSkuError,
+  SkuError,
   buildCustomer,
   buildSalesOrder,
   buildShippingFee,
@@ -43,6 +45,19 @@ describe("katanaItems", () => {
       ],
     };
     expect(katanaItems(order)).toEqual([]);
+  });
+});
+
+describe("SKU errors", () => {
+  it("names the missing and duplicate SKUs", () => {
+    const missing = new MissingSkuError(["A", "B"]);
+    const duplicate = new DuplicateSkuError(["C"]);
+    expect(missing.message).toBe("Not found in Katana (by SKU): A, B");
+    expect(duplicate.message).toBe("Same SKU on more than one Swell product or variant: C");
+    expect(duplicate.skus).toEqual(["C"]);
+    expect(missing).toBeInstanceOf(SkuError);
+    expect(duplicate).toBeInstanceOf(SkuError);
+    expect(duplicate.name).toBe("DuplicateSkuError");
   });
 });
 

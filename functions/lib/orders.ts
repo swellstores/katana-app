@@ -15,7 +15,8 @@ import {
   getSalesOrder,
   listFulfillments,
 } from './katana';
-import { buildCustomer, buildSalesOrder, buildShippingFee, itemSku, katanaItems } from './mapping';
+import { DuplicateSkuError, buildCustomer, buildSalesOrder, buildShippingFee, itemSku, katanaItems } from './mapping';
+import { findStockTargets } from './stock';
 
 export interface SyncContext {
   swell: SwellAPI;
@@ -74,10 +75,15 @@ export async function sendOrder(
   }
 
   const items = katanaItems(order);
-  const variantsBySku = await findVariantsBySku(
-    settings,
-    items.map((item) => itemSku(item)).filter(Boolean) as string[],
-  );
+  const skus = items.map((item) => itemSku(item)).filter(Boolean) as string[];
+
+  // a SKU on more than one Swell product or variant would mix their stock in Katana
+  const { duplicates } = await findStockTargets(swell, skus);
+  if (duplicates.size) {
+    throw new DuplicateSkuError([...duplicates]);
+  }
+
+  const variantsBySku = await findVariantsBySku(settings, skus);
 
   // throws MissingSkuError before anything is created in Katana
   buildSalesOrder(order, { settings, customerId: 0, variantsBySku, storeId: ctx.storeId });

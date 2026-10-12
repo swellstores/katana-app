@@ -105,6 +105,13 @@
       "readonly": true
     },
     {
+      "id": "duplicate_skus",
+      "label": "SKUs on several Swell items",
+      "type": "tags",
+      "readonly": true,
+      "description": "Katana SKUs used by more than one Swell product or variant. Their stock isn't synced until each SKU is on one Swell product or variant."
+    },
+    {
       "id": "failed",
       "label": "Failed",
       "type": "number",
@@ -404,6 +411,12 @@
               "admin_span": 2
             }
           ]
+        },
+        {
+          "id": "duplicate_skus",
+          "conditions": {
+            "type": "inventory"
+          }
         },
         {
           "id": "report",

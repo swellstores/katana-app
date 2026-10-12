@@ -131,6 +131,22 @@ describe("inventoryStep", () => {
     expect(swell.post).toHaveBeenCalledWith("/products:stock", expect.objectContaining({ parent_id: "p_simple", quantity: 6 }));
   });
 
+  it("records SKUs used by more than one Swell product or variant without changing them", async () => {
+    stub({ "GET /inventory": { data: [row("DUP", 3), row("SIMPLE", 4)] } });
+    const swell = stockSwell();
+    swell.get.mockImplementation(async (url: string, query: any) => {
+      if (url === "/products:variants") return { results: [{ id: "v_a", parent_id: "p_a", sku: "DUP" }, { id: "v_b", parent_id: "p_b", sku: "DUP" }] };
+      if (url === "/products" && query?.where?.id) return { results: [] };
+      if (url === "/products") return { results: [] };
+      return null;
+    });
+
+    const { update } = await inventoryStep(ctx(swell), job({ duplicate_skus: ["OLD"] }), Infinity);
+
+    expect(update).toMatchObject({ checked: 2, changed: 0, not_found: 1, duplicate_skus: ["OLD", "DUP"] });
+    expect(swell.post).not.toHaveBeenCalled();
+  });
+
   it("completes on a short page", async () => {
     stub({ "GET /inventory": { data: [row("SIMPLE", 4)] } });
     const { update } = await inventoryStep(ctx(stockSwell()), job(), Infinity);
@@ -205,6 +221,30 @@ describe("ordersStep", () => {
       status: "completed",
     });
     expect(katanaCalls(fetchMock)).toContain("POST /sales_orders");
+  });
+
+  it("fails orders with a SKU used by more than one Swell product or variant, without retrying", async () => {
+    stub(createRoutes);
+    const swell = {
+      get: vi.fn(async (url: string) =>
+        url === "/orders"
+          ? { results: [makeOrder()], count: 1 }
+          : url === "/products:variants"
+            ? { results: [{ id: "v_a", parent_id: "p_a", sku: "ETH-YIRG-1K-ESP" }, { id: "v_b", parent_id: "p_b", sku: "ETH-YIRG-1K-ESP" }] }
+            : { results: [] },
+      ),
+      put: vi.fn().mockResolvedValue({}),
+    } as any;
+
+    const { update, error } = await ordersStep(ctx(swell), job({ type: "orders" }), Infinity);
+
+    expect(error).toBeUndefined();
+    expect(update).toMatchObject({ failed: 1, changed: 0, status: "completed" });
+    expect(swell.put).toHaveBeenCalledWith(
+      `/orders/${ORDER_ID}`,
+      appValues({ katana_error: "Same SKU on more than one Swell product or variant: ETH-YIRG-1K-ESP" }),
+    );
+    expect(katanaCalls(fetchMock)).not.toContain("POST /sales_orders");
   });
 
   it("records orders Katana rejects and carries on", async () => {
@@ -299,6 +339,34 @@ describe("productsStep", () => {
     });
     expect(swell.get).toHaveBeenCalledWith("/products:variants", expect.objectContaining({ where: { parent_id: { $in: ["p3"] } } }));
     expect(swell.put).toHaveBeenCalledWith("/products/p1", appValues({ katana_error: null }));
+  });
+
+  it("fails products whose SKU another Swell product or variant also uses, without creating them", async () => {
+    let lookups = 0;
+    stub({
+      "GET /variants": () => (++lookups === 1 ? { data: [] } : { data: [{ id: 41, sku: "MUG", product_id: 9 }] }),
+      "POST /products": { id: 9 },
+      "GET /inventory": { data: [] },
+      "POST /stock_adjustments": { id: 1 },
+    });
+    const shirt2 = { ...shirt, id: "p4", name: "Shirt 2" };
+    const swell = productSwell(
+      [mug, shirt, shirt2],
+      [
+        { id: "v1", parent_id: "p3", sku: "SHIRT-S", stock_level: 0, option_value_ids: ["s"] },
+        { id: "v2", parent_id: "p4", sku: "SHIRT-S", stock_level: 0, option_value_ids: ["s"] },
+      ],
+    );
+
+    const { update } = await productsStep(ctx(swell), job({ type: "products" }), Infinity);
+
+    expect(update).toMatchObject({ checked: 3, changed: 1, failed: 2, last_id: "p4" });
+    expect(update.last_error).toBe("Product Shirt 2: Same SKU on more than one Swell product or variant: SHIRT-S");
+    expect(swell.put).toHaveBeenCalledWith(
+      "/products/p3",
+      appValues({ katana_error: "Product export: Same SKU on more than one Swell product or variant: SHIRT-S" }),
+    );
+    expect(katanaCalls(fetchMock).filter((call) => call === "POST /products")).toHaveLength(1);
   });
 
   it("records products Katana rejects and carries on", async () => {

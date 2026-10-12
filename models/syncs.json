@@ -73,6 +73,11 @@
       "default": 0,
       "description": "Katana SKUs with no Swell product or variant"
     },
+    "duplicate_skus": {
+      "type": "array",
+      "value_type": "string",
+      "description": "Stock: Katana SKUs used by more than one Swell product or variant, so their stock isn't synced (up to 100)"
+    },
     "failed": {
       "type": "int",
       "default": 0,

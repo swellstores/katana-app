@@ -10,7 +10,7 @@ import {
   listInventoryMovements,
 } from './katana';
 import { SyncContext, applySalesOrder } from './orders';
-import { StockChange, applyInventory, reportPush, saveSyncState } from './stock';
+import { StockChange, applyInventory, mergeSkus, reportPush, saveSyncState } from './stock';
 
 export type PullSource = 'sales_orders' | 'inventory';
 
@@ -55,6 +55,8 @@ export interface PullResult {
   changed: number;
   not_found: number;
   failed: number;
+  // stock checks: moved SKUs used by more than one Swell product or variant
+  duplicate_skus?: string[];
   last_error?: string;
   run?: PullRun;
 }
@@ -73,6 +75,8 @@ interface Counts {
   last_error?: string;
   // stock checks: the Swell stock levels changed
   changes?: StockChange[];
+  // stock checks: moved SKUs used by more than one Swell product or variant
+  duplicate_skus?: string[];
 }
 
 const iso = (ms: number) => new Date(ms).toISOString();
@@ -145,6 +149,9 @@ async function inventoryPage(
   counts.changed += applied.updated;
   counts.changes = [...(counts.changes || []), ...applied.changes];
   counts.not_found += applied.unmatched;
+  if (applied.duplicates.length) {
+    counts.duplicate_skus = mergeSkus(counts.duplicate_skus, applied.duplicates);
+  }
   return { complete: applied.complete, last };
 }
 
@@ -193,7 +200,10 @@ export async function pullSource(
 
   // SKUs Katana moves that aren't in Swell (e.g. raw materials) are common, so they alone aren't logged
   const notable =
-    counts.changed > 0 || counts.failed > 0 || (source === 'sales_orders' && counts.not_found > 0);
+    counts.changed > 0 ||
+    counts.failed > 0 ||
+    (source === 'sales_orders' && counts.not_found > 0) ||
+    Boolean(counts.duplicate_skus?.length);
   if (!resume && !notable && done) {
     return result;
   }
@@ -206,6 +216,9 @@ export async function pullSource(
   const changes = counts.changes || [];
   if (source === 'inventory') {
     save.report_rows = (resume?.report_rows || 0) + changes.length;
+  }
+  if (counts.duplicate_skus?.length) {
+    save.duplicate_skus = mergeSkus(resume?.duplicate_skus, counts.duplicate_skus);
   }
   if (done) {
     Object.assign(save, { status: 'completed', page: null, date_completed: iso(now()) });
@@ -267,11 +280,14 @@ export function describeChecks(settings: KatanaSettings, results: PullResult[]):
       source === 'sales_orders'
         ? `${result.changed} Swell orders updated, ${result.not_found} sales orders without a Swell order`
         : `${result.changed} Swell stock levels changed, ${result.not_found} moved SKUs not in Swell`;
+    const duplicates = result.duplicate_skus?.length
+      ? `, not synced because more than one Swell product or variant uses the SKU: ${result.duplicate_skus.join(', ')}`
+      : '';
     const failed = result.failed ? `, ${result.failed} failed (${result.last_error})` : '';
     const status = result.complete
       ? ''
       : ` Not finished${result.last_error && !result.failed ? ` (${result.last_error})` : ''}; the next check continues.`;
-    return `${SOURCE_LABELS[source]} changed since ${result.cursor}: ${counts}${failed}.${status}`;
+    return `${SOURCE_LABELS[source]} changed since ${result.cursor}: ${counts}${duplicates}${failed}.${status}`;
   });
   return parts.join(' ');
 }

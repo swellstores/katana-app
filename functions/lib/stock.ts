@@ -17,6 +17,23 @@ export interface StockSyncResult {
   updated: number;
   skipped: number;
   unmatched: number;
+  // SKUs used by more than one Swell product or variant; their stock isn't changed
+  duplicates: string[];
+}
+
+// Swell products and variants by SKU, and the SKUs that more than one of them uses
+export interface StockTargets {
+  targets: Map<string, StockTarget>;
+  duplicates: Set<string>;
+}
+
+// SKUs kept on a sync or check record
+export const DUPLICATE_LIMIT = 100;
+
+// merges SKU lists, unique and capped at DUPLICATE_LIMIT
+export function mergeSkus(existing: unknown, added: string[]): string[] {
+  const before = Array.isArray(existing) ? existing.map(String) : [];
+  return [...new Set([...before, ...added])].slice(0, DUPLICATE_LIMIT);
 }
 
 // one Swell stock level changed by a sync, for the report on its job or check
@@ -40,13 +57,27 @@ function isVariable(product: any): boolean {
   return (product?.options || []).some((option: any) => option?.variant);
 }
 
-// Swell products and variants for the given SKUs, keyed by SKU (variant SKUs win)
-export async function findStockTargets(swell: SwellAPI, skus: string[]): Promise<Map<string, StockTarget>> {
+// Swell products and variants for the given SKUs, keyed by SKU. A SKU used by more than one product
+// without variants or variant is a duplicate: it's left out of `targets` and listed in `duplicates`.
+export async function findStockTargets(swell: SwellAPI, skus: string[]): Promise<StockTargets> {
   const unique = [...new Set(skus.filter(Boolean))];
   const targets = new Map<string, StockTarget>();
+  const duplicates = new Set<string>();
   if (!unique.length) {
-    return targets;
+    return { targets, duplicates };
   }
+
+  const add = (target: StockTarget) => {
+    if (duplicates.has(target.sku)) {
+      return;
+    }
+    if (targets.has(target.sku)) {
+      targets.delete(target.sku);
+      duplicates.add(target.sku);
+      return;
+    }
+    targets.set(target.sku, target);
+  };
 
   const products = await swell.get('/products', {
     where: { sku: { $in: unique } },
@@ -56,7 +87,7 @@ export async function findStockTargets(swell: SwellAPI, skus: string[]): Promise
   for (const product of products?.results || []) {
     // stock of a product with variants lives on the variants
     if (product.sku && !isVariable(product)) {
-      targets.set(product.sku, {
+      add({
         sku: product.sku,
         product_id: product.id,
         variant_id: null,
@@ -84,7 +115,7 @@ export async function findStockTargets(swell: SwellAPI, skus: string[]): Promise
     const parentById = new Map<string, any>((parents?.results || []).map((p: any) => [p.id, p]));
     for (const variant of variantResults) {
       if (variant.sku) {
-        targets.set(variant.sku, {
+        add({
           sku: variant.sku,
           product_id: variant.parent_id,
           variant_id: variant.id,
@@ -97,7 +128,7 @@ export async function findStockTargets(swell: SwellAPI, skus: string[]): Promise
     }
   }
 
-  return targets;
+  return { targets, duplicates };
 }
 
 // posts a stock adjustment so the Swell level equals `level`; returns true when stock changed
@@ -129,12 +160,20 @@ export async function applyInventory(
   appValues: (values: SwellData) => SwellData,
   deadline = Infinity,
 ): Promise<StockSyncResult & { complete: boolean; changes: StockChange[] }> {
-  const result = { checked: 0, updated: 0, skipped: 0, unmatched: 0, complete: true, changes: [] as StockChange[] };
+  const result = {
+    checked: 0,
+    updated: 0,
+    skipped: 0,
+    unmatched: 0,
+    duplicates: [] as string[],
+    complete: true,
+    changes: [] as StockChange[],
+  };
 
   const withSku = rows.filter((row) => row.variant?.sku);
   result.skipped += rows.length - withSku.length;
 
-  const targets = await findStockTargets(
+  const { targets, duplicates } = await findStockTargets(
     swell,
     withSku.map((row) => row.variant!.sku as string),
   );
@@ -147,7 +186,14 @@ export async function applyInventory(
     }
     result.checked++;
 
-    const target = targets.get(row.variant!.sku as string);
+    const sku = row.variant!.sku as string;
+    if (duplicates.has(sku)) {
+      if (!result.duplicates.includes(sku)) {
+        result.duplicates.push(sku);
+      }
+      continue;
+    }
+    const target = targets.get(sku);
     if (!target) {
       result.unmatched++;
       continue;

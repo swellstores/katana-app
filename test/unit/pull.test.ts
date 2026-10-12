@@ -26,7 +26,7 @@ const salesOrder = (overrides: Record<string, any> = {}) => ({
 });
 
 // a Swell order linked to sales order 900 (NOT_SHIPPED), and a simple product SIMPLE with 4 in stock
-function makeSwell({ latest = undefined as any, order = makeOrder({ $app: { katana: { katana_sales_order_id: 900, katana_order_no: "SW-100506", katana_status: "NOT_SHIPPED" } } }) as Record<string, any> | null } = {}) {
+function makeSwell({ variants = [] as any[], latest = undefined as any, order = makeOrder({ $app: { katana: { katana_sales_order_id: 900, katana_order_no: "SW-100506", katana_status: "NOT_SHIPPED" } } }) as Record<string, any> | null } = {}) {
   const get = vi.fn(async (url: string, query: any) => {
     if (url === "/pulls") return { results: latest ? [latest] : [] };
     if (url === "/orders") {
@@ -34,10 +34,11 @@ function makeSwell({ latest = undefined as any, order = makeOrder({ $app: { kata
       return { results: order && query?.where?.["$app.katana.katana_sales_order_id"] === linked ? [order] : [] };
     }
     if (url.startsWith("/orders/")) return url === `/orders/${order?.id}` ? order : null;
+    if (url === "/products" && query?.where?.id) return { results: [] };
     if (url === "/products") {
       return { results: [{ id: "p_simple", sku: "SIMPLE", stock_level: 4, stock_tracking: true }].filter((p) => query.where.sku.$in.includes(p.sku)) };
     }
-    if (url === "/products:variants") return { results: [] };
+    if (url === "/products:variants") return { results: variants.filter((v) => query.where.sku.$in.includes(v.sku)) };
     return null;
   });
   const post = vi.fn(async (url: string, body: any) => (url === "/pulls" ? { id: "pull_new", ...body } : {}));
@@ -268,6 +269,33 @@ describe("pullSource: inventory", () => {
     expect(swell.post).not.toHaveBeenCalledWith("/pulls", expect.anything());
   });
 
+  it("logs moved SKUs used by more than one Swell product or variant, without changing them", async () => {
+    stub({
+      "GET /inventory_movements": { data: [{ id: 1, variant_id: 13, location_id: 7 }] },
+      "GET /inventory": { data: [{ variant_id: 13, location_id: 7, quantity_in_stock: "5", variant: { id: 13, sku: "DUP" } }] },
+    });
+    const swell = makeSwell({ variants: [{ id: "v_a", parent_id: "p_a", sku: "DUP" }, { id: "v_b", parent_id: "p_b", sku: "DUP" }] });
+
+    const result = await pullSource(ctx(swell), "inventory", undefined, Infinity, now);
+
+    expect(result).toMatchObject({ complete: true, changed: 0, not_found: 0, duplicate_skus: ["DUP"] });
+    expect(swell.post).not.toHaveBeenCalledWith("/products:stock", expect.anything());
+    expect(swell.post).toHaveBeenCalledWith("/pulls", expect.objectContaining({ status: "completed", duplicate_skus: ["DUP"] }));
+  });
+
+  it("merges duplicate SKUs into a running check", async () => {
+    stub({
+      "GET /inventory_movements": { data: [{ id: 1, variant_id: 13, location_id: 7 }] },
+      "GET /inventory": { data: [{ variant_id: 13, location_id: 7, quantity_in_stock: "5", variant: { id: 13, sku: "DUP" } }] },
+    });
+    const latest = { id: "p1", source: "inventory", status: "running", duplicate_skus: ["OLD", "DUP"], page: 1, date_cursor: "2026-10-07T11:00:00.000Z", date_pass_started: "2026-10-07T11:55:00.000Z" };
+    const swell = makeSwell({ latest, variants: [{ id: "v_a", parent_id: "p_a", sku: "DUP" }, { id: "v_b", parent_id: "p_b", sku: "DUP" }] });
+
+    await pullSource(ctx(swell), "inventory", latest as any, Infinity, now);
+
+    expect(swell.put).toHaveBeenCalledWith("/pulls/p1", expect.objectContaining({ duplicate_skus: ["OLD", "DUP"] }));
+  });
+
   it("skips the inventory read when nothing moved", async () => {
     stub({ "GET /inventory_movements": { data: [] } });
     await pullSource(ctx(makeSwell()), "inventory", undefined, Infinity, now);
@@ -300,6 +328,13 @@ describe("describeChecks", () => {
     expect(describeChecks(SETTINGS as any, results)).toBe(
       "Sales orders changed since 2026-10-07T11:54:00.000Z: 2 Swell orders updated, 1 sales orders without a Swell order. " +
         "Stock changed since 2026-10-07T11:54:00.000Z: 3 Swell stock levels changed, 4 moved SKUs not in Swell.",
+    );
+  });
+
+  it("lists SKUs on more than one Swell product or variant", () => {
+    const results: PullResult[] = [{ ...base, source: "inventory", changed: 1, duplicate_skus: ["DUP", "X"] }];
+    expect(describeChecks({ ...SETTINGS, sync_inventory: true } as any, results)).toContain(
+      "Stock changed since 2026-10-07T11:54:00.000Z: 1 Swell stock levels changed, 0 moved SKUs not in Swell, not synced because more than one Swell product or variant uses the SKU: DUP, X.",
     );
   });
 

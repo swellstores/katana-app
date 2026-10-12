@@ -2,10 +2,10 @@
 // it and saves its progress; saving re-triggers `sync-run` for the next step until the job completes.
 
 import { KatanaError, findVariantsBySku, getAppData, isRetryable, listInventory, syncPageSize } from './katana';
-import { MissingSkuError, katanaItems } from './mapping';
+import { DuplicateSkuError, SkuError, katanaItems } from './mapping';
 import { SyncContext, sendOrder } from './orders';
 import { exportProduct, isVariable, productItems } from './products';
-import { applyInventory, reportPush } from './stock';
+import { applyInventory, findStockTargets, mergeSkus, reportPush } from './stock';
 
 export type JobType = 'inventory' | 'orders' | 'products';
 
@@ -116,6 +116,9 @@ export async function inventoryStep(ctx: SyncContext, job: Job, deadline: number
     last_error: null,
     ...reportPush(result.changes, job.report_rows),
   };
+  if (result.duplicates.length) {
+    update.duplicate_skus = mergeSkus(job.duplicate_skus, result.duplicates);
+  }
   if (!result.complete) {
     update.page = page;
   } else if (rows.length < limit) {
@@ -179,7 +182,7 @@ export async function ordersStep(ctx: SyncContext, job: Job, deadline: number): 
       await sendOrder(ctx, order);
       counts.changed++;
     } catch (err: any) {
-      if (isRetryable(err) && !(err instanceof MissingSkuError)) {
+      if (isRetryable(err) && !(err instanceof SkuError)) {
         counts.checked--;
         error = err;
         break;
@@ -248,10 +251,10 @@ export async function productsStep(ctx: SyncContext, job: Job, deadline: number)
   const prepared = products.map((product) =>
     productItems(product, variants.filter((variant: any) => variant.parent_id === product.id)),
   );
-  const known = await findVariantsBySku(
-    settings,
-    prepared.flatMap(({ items }) => items.map((item) => item.sku)),
-  );
+  const skus = prepared.flatMap(({ items }) => items.map((item) => item.sku));
+  const known = await findVariantsBySku(settings, skus);
+  // SKUs on more than one Swell product or variant can't be matched to one Katana variant
+  const { duplicates } = await findStockTargets(swell, skus);
 
   const counts = { checked: 0, changed: 0, skipped: 0, failed: 0, adjusted: 0 };
   let lastId = job.last_id || null;
@@ -266,6 +269,16 @@ export async function productsStep(ctx: SyncContext, job: Job, deadline: number)
     counts.skipped += skipped;
     if (!items.length) {
       counts.checked++;
+      lastId = product.id;
+      continue;
+    }
+    const duplicated = [...new Set(items.filter((item) => duplicates.has(item.sku)).map((item) => item.sku))];
+    if (duplicated.length) {
+      const message = new DuplicateSkuError(duplicated).message;
+      await swell.put(`/products/${product.id}`, ctx.appValues({ katana_error: `Product export: ${message}` }));
+      counts.checked++;
+      counts.failed++;
+      lastError = `Product ${product.name}: ${message}`;
       lastId = product.id;
       continue;
     }

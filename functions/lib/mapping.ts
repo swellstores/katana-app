@@ -67,12 +67,28 @@ export function buildCustomer(order: any): Record<string, unknown> {
   };
 }
 
-export class MissingSkuError extends Error {
+// SKU problems in the data; retrying won't help until the merchant fixes the SKUs
+export class SkuError extends Error {
   skus: string[];
-  constructor(skus: string[]) {
-    super(`Not found in Katana (by SKU): ${skus.join(', ')}`);
-    this.name = 'MissingSkuError';
+  constructor(message: string, skus: string[]) {
+    super(message);
+    this.name = 'SkuError';
     this.skus = skus;
+  }
+}
+
+export class MissingSkuError extends SkuError {
+  constructor(skus: string[]) {
+    super(`Not found in Katana (by SKU): ${skus.join(', ')}`, skus);
+    this.name = 'MissingSkuError';
+  }
+}
+
+// a SKU used by more than one Swell product or variant can't be matched to one Katana variant
+export class DuplicateSkuError extends SkuError {
+  constructor(skus: string[]) {
+    super(`Same SKU on more than one Swell product or variant: ${skus.join(', ')}`, skus);
+    this.name = 'DuplicateSkuError';
   }
 }
 

@@ -8,7 +8,7 @@ import {
   resolveCustomerId,
   sendOrder,
 } from "../../functions/lib/orders";
-import { MissingSkuError } from "../../functions/lib/mapping";
+import { DuplicateSkuError, MissingSkuError } from "../../functions/lib/mapping";
 import { ACCOUNT_ID, ORDER_ID, SETTINGS, appValues, jsonResponse, katanaCalls, katanaFetch, makeOrder } from "../helpers/fixtures";
 
 function makeCtx(settings: Record<string, any> = SETTINGS) {
@@ -71,6 +71,22 @@ describe("resolveCustomerId", () => {
 
 describe("sendOrder", () => {
   const salesOrder = { id: 900, order_no: "SW-100506", customer_id: 66, status: "NOT_SHIPPED" };
+
+  it("refuses an order whose SKU is on more than one Swell product or variant", async () => {
+    const fetchMock = stubKatana({ "GET /sales_orders": { data: [] } });
+    const ctx = makeCtx();
+    ctx.swell.get.mockImplementation(async (url: string) =>
+      url === "/products:variants"
+        ? { results: [{ id: "v_a", parent_id: "p_a", sku: "ETH-YIRG-1K-ESP" }, { id: "v_b", parent_id: "p_b", sku: "ETH-YIRG-1K-ESP" }] }
+        : { results: [] },
+    );
+
+    await expect(sendOrder(ctx, makeOrder())).rejects.toThrow(
+      new DuplicateSkuError(["ETH-YIRG-1K-ESP"]),
+    );
+    expect(katanaCalls(fetchMock)).toEqual(["GET /sales_orders"]);
+    expect(ctx.swell.put).not.toHaveBeenCalled();
+  });
 
   it("creates the sales order with the shipping fee and saves it on the order", async () => {
     const fetchMock = stubKatana({

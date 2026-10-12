@@ -1,8 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
+  DUPLICATE_LIMIT,
   REPORT_LIMIT,
   applyInventory,
   findStockTargets,
+  mergeSkus,
   reportPush,
   saveSyncState,
   setStockLevel,
@@ -11,8 +13,9 @@ import { SETTINGS, appValues } from "../helpers/fixtures";
 
 const settings = SETTINGS as any;
 
-// swell mock with a simple product (SIMPLE), a variable product (VAR-PARENT) and its variant (VAR-1)
-function makeSwell({ tracking = true } = {}) {
+// swell mock with a simple product (SIMPLE), a variable product (VAR-PARENT) and its variant (VAR-1);
+// `extraVariants` adds more variants of VAR-PARENT, e.g. to reuse a SKU
+function makeSwell({ tracking = true, extraVariants = [] as any[] } = {}) {
   const get = vi.fn(async (url: string, query: any) => {
     if (url === "/products" && query?.where?.sku) {
       return {
@@ -24,7 +27,9 @@ function makeSwell({ tracking = true } = {}) {
     }
     if (url === "/products:variants") {
       return {
-        results: [{ id: "v_1", parent_id: "p_var", name: "Small", sku: "VAR-1" }].filter((v) => query.where.sku.$in.includes(v.sku)),
+        results: [{ id: "v_1", parent_id: "p_var", name: "Small", sku: "VAR-1" }, ...extraVariants].filter((v) =>
+          query.where.sku.$in.includes(v.sku),
+        ),
       };
     }
     if (url === "/products" && query?.where?.id) {
@@ -48,7 +53,8 @@ afterEach(() => vi.restoreAllMocks());
 describe("findStockTargets", () => {
   it("maps simple products and variants by SKU, skipping variable parents", async () => {
     const swell = makeSwell();
-    const targets = await findStockTargets(swell, ["SIMPLE", "VAR-PARENT", "VAR-1", "SIMPLE"]);
+    const { targets, duplicates } = await findStockTargets(swell, ["SIMPLE", "VAR-PARENT", "VAR-1", "SIMPLE"]);
+    expect(duplicates.size).toBe(0);
     expect(targets.get("SIMPLE")).toEqual({
       sku: "SIMPLE",
       product_id: "p_simple",
@@ -72,8 +78,49 @@ describe("findStockTargets", () => {
 
   it("makes no calls for no SKUs", async () => {
     const swell = makeSwell();
-    expect((await findStockTargets(swell, [])).size).toBe(0);
+    const { targets, duplicates } = await findStockTargets(swell, []);
+    expect(targets.size).toBe(0);
+    expect(duplicates.size).toBe(0);
     expect(swell.get).not.toHaveBeenCalled();
+  });
+
+  it("lists a SKU used by two variants as a duplicate, not a target", async () => {
+    const swell = makeSwell({ extraVariants: [{ id: "v_2", parent_id: "p_var", name: "Large", sku: "VAR-1" }] });
+    const { targets, duplicates } = await findStockTargets(swell, ["VAR-1", "SIMPLE"]);
+    expect([...duplicates]).toEqual(["VAR-1"]);
+    expect(targets.has("VAR-1")).toBe(false);
+    expect(targets.has("SIMPLE")).toBe(true);
+  });
+
+  it("lists a SKU used by a product and a variant as a duplicate", async () => {
+    const swell = makeSwell({ extraVariants: [{ id: "v_2", parent_id: "p_var", name: "Large", sku: "SIMPLE" }] });
+    const { targets, duplicates } = await findStockTargets(swell, ["SIMPLE"]);
+    expect([...duplicates]).toEqual(["SIMPLE"]);
+    expect(targets.size).toBe(0);
+  });
+
+  it("keeps a SKU used three times as one duplicate", async () => {
+    const swell = makeSwell({
+      extraVariants: [
+        { id: "v_2", parent_id: "p_var", name: "Large", sku: "VAR-1" },
+        { id: "v_3", parent_id: "p_var", name: "XL", sku: "VAR-1" },
+      ],
+    });
+    const { targets, duplicates } = await findStockTargets(swell, ["VAR-1"]);
+    expect([...duplicates]).toEqual(["VAR-1"]);
+    expect(targets.size).toBe(0);
+  });
+});
+
+describe("mergeSkus", () => {
+  it("merges unique SKUs, keeping the existing order", () => {
+    expect(mergeSkus(["A", "B"], ["B", "C"])).toEqual(["A", "B", "C"]);
+    expect(mergeSkus(undefined, ["A"])).toEqual(["A"]);
+  });
+
+  it("keeps at most DUPLICATE_LIMIT SKUs", () => {
+    const many = Array.from({ length: DUPLICATE_LIMIT + 5 }, (_, i) => `S${i}`);
+    expect(mergeSkus([], many)).toHaveLength(DUPLICATE_LIMIT);
   });
 });
 
@@ -127,6 +174,7 @@ describe("applyInventory", () => {
       updated: 2,
       skipped: 1,
       unmatched: 1,
+      duplicates: [],
       complete: true,
       changes: [
         { product: "Mug", variant: null, change: 4, sku: "SIMPLE" },
@@ -138,6 +186,14 @@ describe("applyInventory", () => {
     expect(swell.put).toHaveBeenCalledWith("/products/p_simple", {
       $app: { katana: { katana_stock_synced_at: expect.any(String), katana_error: null } },
     });
+  });
+
+  it("leaves duplicate SKUs alone and reports them", async () => {
+    const swell = makeSwell({ extraVariants: [{ id: "v_2", parent_id: "p_var", name: "Large", sku: "VAR-1" }] });
+    const result = await applyInventory(swell, [row("VAR-1", 5), row("VAR-1", 5), row("SIMPLE", 10)], settings, appValues);
+    expect(result).toMatchObject({ checked: 3, updated: 1, unmatched: 0, duplicates: ["VAR-1"] });
+    expect(swell.post).toHaveBeenCalledTimes(1);
+    expect(swell.post.mock.calls[0][1]).toMatchObject({ parent_id: "p_simple" });
   });
 
   it("writes negative Katana stock to Swell", async () => {
