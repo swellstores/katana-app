@@ -288,7 +288,6 @@
         }
       ],
       "actions": [
-        "new",
         {
           "id": "sync_inventory",
           "label": "Sync all stock",
@@ -526,7 +525,8 @@
             }
           },
           "modal": {
-            "description": "Stops after the current step. Changes already made stay."
+            "description": "Stops after the current step. Changes already made stay.",
+            "submit_label": "Stop"
           }
         },
         {
