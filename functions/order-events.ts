@@ -1,5 +1,5 @@
 import { getAppData, getKatanaSettings, hasCredentials, isRetryable } from './lib/katana';
-import { MissingSkuError, shippableItems } from './lib/mapping';
+import { MissingSkuError, katanaItems } from './lib/mapping';
 import { cancelOrder, getOrder, sendOrder } from './lib/orders';
 
 export const config: SwellConfig = {
@@ -66,8 +66,8 @@ export default async function (req: SwellRequest) {
     return;
   }
 
-  if (!shippableItems(order).length) {
-    console.log(`Katana: order ${order.number} has no shippable items, skipping`);
+  if (!katanaItems(order).length) {
+    console.log(`Katana: order ${order.number} has no items for Katana, skipping`);
     return;
   }
 

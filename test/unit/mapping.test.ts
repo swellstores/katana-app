@@ -8,7 +8,7 @@ import {
   formatAddress,
   itemSku,
   orderNo,
-  shippableItems,
+  katanaItems,
   stockTarget,
 } from "../../functions/lib/mapping";
 import { SETTINGS, makeOrder } from "../helpers/fixtures";
@@ -16,11 +16,33 @@ import { SETTINGS, makeOrder } from "../helpers/fixtures";
 const settings = SETTINGS as any;
 const variants = new Map([["ETH-YIRG-1K-ESP", { id: 501, sku: "ETH-YIRG-1K-ESP" }]]);
 
-describe("shippableItems", () => {
-  it("keeps only items delivered by shipment", () => {
+describe("katanaItems", () => {
+  it("keeps items delivered by shipment", () => {
     const order = { items: [{ id: 1, delivery: "shipment" }, { id: 2, delivery: null }, { id: 3, delivery: "subscription" }] };
-    expect(shippableItems(order).map((i) => i.id)).toEqual([1]);
-    expect(shippableItems({})).toEqual([]);
+    expect(katanaItems(order).map((i) => i.id)).toEqual([1]);
+    expect(katanaItems({})).toEqual([]);
+  });
+
+  it("keeps digital items whose product tracks stock", () => {
+    const order = {
+      items: [
+        { id: 1, delivery: null, product: { stock_tracking: true } },
+        { id: 2, product: { stock_tracking: true } },
+        { id: 3, delivery: null, product: { stock_tracking: false } },
+        { id: 4, delivery: null },
+      ],
+    };
+    expect(katanaItems(order).map((i) => i.id)).toEqual([1, 2]);
+  });
+
+  it("skips gift cards and subscriptions even when they track stock", () => {
+    const order = {
+      items: [
+        { id: 1, delivery: "giftcard", product: { stock_tracking: true } },
+        { id: 2, delivery: "subscription", product: { stock_tracking: true } },
+      ],
+    };
+    expect(katanaItems(order)).toEqual([]);
   });
 });
 
@@ -122,6 +144,26 @@ describe("buildSalesOrder", () => {
       { variant_id: 501, quantity: 2, price_per_unit: 60, total_discount: 10, tax_rate_id: 3, location_id: 7 },
     ]);
     expect((body.addresses as any[]).length).toBe(2);
+  });
+
+  it("adds digital items that track stock next to physical ones", () => {
+    const order = makeOrder();
+    order.items.push(
+      { id: "item_d", delivery: null, quantity: 1, price: 25, product: { name: "Course", sku: "COURSE-1", stock_tracking: true } } as any,
+      { id: "item_g", delivery: "giftcard", quantity: 1, price: 50, product: { name: "Gift card", stock_tracking: true } } as any,
+    );
+    const both = new Map([...variants, ["COURSE-1", { id: 777, sku: "COURSE-1" }]]);
+    const body = buildSalesOrder(order, { settings, customerId: 12, variantsBySku: both, storeId: "onixo" });
+    expect((body.sales_order_rows as any[]).map((row) => row.variant_id)).toEqual([501, 777]);
+  });
+
+  it("requires a Katana SKU for digital items that track stock", () => {
+    const order = makeOrder({
+      items: [{ id: "item_d", delivery: null, quantity: 1, price: 25, product: { name: "Course", stock_tracking: true } }],
+    });
+    expect(() => buildSalesOrder(order, { settings, customerId: 12, variantsBySku: variants, storeId: "onixo" })).toThrow(
+      "Not found in Katana (by SKU): Course (no SKU)",
+    );
   });
 
   it("leaves out optional fields that aren't set", () => {

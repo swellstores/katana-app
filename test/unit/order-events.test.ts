@@ -98,10 +98,34 @@ describe("order-events", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("skips orders without shippable items", async () => {
+  it("skips orders without items for Katana", async () => {
     const { req } = setup({ order: makeOrder({ items: [{ id: "i", delivery: null }] }) });
     await handler(req);
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("sends an order with only digital items that track stock", async () => {
+    stub(createRoutes);
+    const digital = {
+      id: "item_d",
+      delivery: null,
+      quantity: 1,
+      price: 25,
+      product_id: "prod_d",
+      product: { name: "Coffee course", sku: "ETH-YIRG-1K-ESP", stock_tracking: true },
+    };
+    const { req, put } = setup({ order: makeOrder({ items: [digital], shipping: {}, shipment_price: 0, shipment_total: 0 }) });
+
+    await handler(req);
+
+    const post = fetchMock.mock.calls.find(([, i]: any) => i?.method === "POST")!;
+    const body = JSON.parse(String((post[1] as RequestInit).body));
+    expect(body.sales_order_rows).toEqual([
+      expect.objectContaining({ variant_id: 501, quantity: 1, price_per_unit: 25 }),
+    ]);
+    expect(body.addresses.map((a: any) => a.entity_type)).toEqual(["billing"]);
+    expect(katanaCalls(fetchMock)).not.toContain("POST /sales_order_shipping_fee");
+    expect(put.mock.calls.at(-1)[1].$app.katana.katana_sales_order_id).toBe(900);
   });
 
   it("records missing SKUs on the order without retrying", async () => {

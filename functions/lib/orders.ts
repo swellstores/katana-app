@@ -15,7 +15,7 @@ import {
   getSalesOrder,
   listFulfillments,
 } from './katana';
-import { buildCustomer, buildSalesOrder, buildShippingFee, itemSku, shippableItems } from './mapping';
+import { buildCustomer, buildSalesOrder, buildShippingFee, itemSku, katanaItems } from './mapping';
 
 export interface SyncContext {
   swell: SwellAPI;
@@ -73,7 +73,7 @@ export async function sendOrder(
     return { salesOrder: existing, created: false };
   }
 
-  const items = shippableItems(order);
+  const items = katanaItems(order);
   const variantsBySku = await findVariantsBySku(
     settings,
     items.map((item) => itemSku(item)).filter(Boolean) as string[],

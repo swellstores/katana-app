@@ -6,7 +6,7 @@ import {
   listLocations,
   listTaxRates,
 } from './lib/katana';
-import { shippableItems } from './lib/mapping';
+import { katanaItems } from './lib/mapping';
 import { getOrder, sendOrder } from './lib/orders';
 import { JOB_LABELS, JobType, startJob } from './lib/jobs';
 import { describeChecks, runChecks } from './lib/pull';
@@ -138,8 +138,8 @@ async function sendOrderAction(req: SwellRequest, settings: KatanaSettings) {
   if (appData.katana_sales_order_id && appData.katana_status !== 'DELETED') {
     return { message: `Already in Katana as sales order ${appData.katana_order_no}.` };
   }
-  if (!shippableItems(order).length) {
-    return { message: 'This order has no shippable items, so nothing was sent.' };
+  if (!katanaItems(order).length) {
+    return { message: 'This order has no items for Katana, so nothing was sent.' };
   }
 
   try {

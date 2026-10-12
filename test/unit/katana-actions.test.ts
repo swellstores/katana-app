@@ -189,7 +189,7 @@ describe("katana-actions", () => {
 
     it("skips orders with nothing to ship", async () => {
       const { req } = setup({ action: "send_order", data: sendData, order: makeOrder({ items: [] }) });
-      expect(await handler(req)).toEqual({ message: "This order has no shippable items, so nothing was sent." });
+      expect(await handler(req)).toEqual({ message: "This order has no items for Katana, so nothing was sent." });
     });
 
     it("shows and records the error", async () => {

@@ -1,8 +1,10 @@
 import type { KatanaInventory, KatanaSettings, KatanaVariant } from './katana';
 
-// only physical goods go to Katana; digital items, gift cards and subscriptions are skipped
-export function shippableItems(order: any): any[] {
-  return (order?.items || []).filter((item: any) => item.delivery === 'shipment');
+// items sent to Katana
+export function katanaItems(order: any): any[] {
+  return (order?.items || []).filter(
+    (item: any) => item.delivery === 'shipment' || (!item.delivery && item.product?.stock_tracking === true),
+  );
 }
 
 export function itemSku(item: any): string | undefined {
@@ -74,7 +76,7 @@ export class MissingSkuError extends Error {
   }
 }
 
-// every shippable item needs a SKU that exists in Katana; returns the item names/SKUs that don't
+// every item sent to Katana needs a SKU that exists in Katana; returns the item names/SKUs that don't
 export function findMissingSkus(items: any[], variantsBySku: Map<string, KatanaVariant>): string[] {
   const missing: string[] = [];
   for (const item of items) {
@@ -99,7 +101,7 @@ export function buildSalesOrder(
   },
 ): Record<string, unknown> {
   const { settings, customerId, variantsBySku, storeId } = options;
-  const items = shippableItems(order);
+  const items = katanaItems(order);
 
   const missing = findMissingSkus(items, variantsBySku);
   if (missing.length) {

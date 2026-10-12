@@ -2,7 +2,7 @@
 // it and saves its progress; saving re-triggers `sync-run` for the next step until the job completes.
 
 import { KatanaError, findVariantsBySku, getAppData, isRetryable, listInventory, syncPageSize } from './katana';
-import { MissingSkuError, shippableItems } from './mapping';
+import { MissingSkuError, katanaItems } from './mapping';
 import { SyncContext, sendOrder } from './orders';
 import { exportProduct, isVariable, productItems } from './products';
 import { applyInventory, reportPush } from './stock';
@@ -170,7 +170,7 @@ export async function ordersStep(ctx: SyncContext, job: Job, deadline: number): 
       break;
     }
     counts.checked++;
-    if (getAppData(order, ctx.appId).katana_sales_order_id || !shippableItems(order).length) {
+    if (getAppData(order, ctx.appId).katana_sales_order_id || !katanaItems(order).length) {
       counts.skipped++;
       lastId = order.id;
       continue;

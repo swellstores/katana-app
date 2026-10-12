@@ -301,6 +301,16 @@ describe("createSwellShipment", () => {
     expect(ctx.swell.post).not.toHaveBeenCalled();
   });
 
+  it("does not ship digital items", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    const ctx = makeCtx();
+    ctx.swell.get.mockResolvedValue(
+      makeOrder({ items: [{ id: "item_d", delivery: null, quantity: 1, product: { stock_tracking: true } }] }),
+    );
+    expect(await createSwellShipment(ctx.swell, ORDER_ID, { id: 900, order_no: "SW-1" } as any)).toBeNull();
+    expect(ctx.swell.post).not.toHaveBeenCalled();
+  });
+
   it("uses the sales order tracking when there is no fulfillment", async () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     const ctx = makeCtx();
