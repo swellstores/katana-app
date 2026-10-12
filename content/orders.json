@@ -70,7 +70,7 @@
           "label": "Send to Katana",
           "function": "katana-actions",
           "loading_label": "Sending to Katana…",
-          "hint": "Creates the Katana sales order now, e.g. after fixing a missing SKU"
+          "hint": "Creates the Katana sales order now, e.g. after fixing a missing SKU. Canceled orders aren't sent."
         }
       ],
       "tabs": [
