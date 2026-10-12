@@ -32,8 +32,8 @@ describe("katana-poll", () => {
     const { req, put } = setup();
     await handler(req);
     expect(katanaCalls(fetchMock).sort()).toEqual(["GET /inventory_movements", "GET /sales_orders"]);
-    expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { orders_checked_at: expect.any(String) } });
-    expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { stock_checked_at: expect.any(String) } });
+    expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { orders_checked_at: expect.any(String) }, $events: false });
+    expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { stock_checked_at: expect.any(String) }, $events: false });
   });
 
   it("skips stock when inventory sync is off", async () => {

@@ -96,7 +96,7 @@ describe("katana-actions", () => {
           "Sales orders changed since 2026-10-07T09:59:00.000Z: 0 Swell orders updated, 0 sales orders without a Swell order. " +
           "Stock changed since 2026-10-07T10:29:00.000Z: 0 Swell stock levels changed, 0 moved SKUs not in Swell.",
       });
-      expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { orders_checked_at: expect.any(String) } });
+      expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { orders_checked_at: expect.any(String) }, $events: false });
     });
 
     it("needs a location", async () => {

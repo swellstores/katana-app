@@ -241,9 +241,9 @@ describe("reportPush", () => {
 });
 
 describe("saveSyncState", () => {
-  it("writes into the app's settings group", async () => {
+  it("writes into the app's settings group without an event", async () => {
     const swell = makeSwell();
     await saveSyncState(swell, "katana", { stock_checked_at: "t" });
-    expect(swell.put).toHaveBeenCalledWith("/settings/katana", { katana: { stock_checked_at: "t" } });
+    expect(swell.put).toHaveBeenCalledWith("/settings/katana", { katana: { stock_checked_at: "t" }, $events: false });
   });
 });

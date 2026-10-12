@@ -111,7 +111,7 @@ describe("pullSource: sales orders", () => {
     expect(result).toMatchObject({ complete: true, changed: 0, not_found: 0, failed: 0 });
     expect(result.run).toBeUndefined();
     expect(swell.post).not.toHaveBeenCalled();
-    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { orders_checked_at: "2026-10-07T12:00:00.000Z" } }]]);
+    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { orders_checked_at: "2026-10-07T12:00:00.000Z" }, $events: false }]]);
   });
 
   it("logs a check that updated orders", async () => {
@@ -163,7 +163,7 @@ describe("pullSource: sales orders", () => {
 
     expect(query).toMatchObject({ updated_at_min: "2026-10-07T10:00:00.000Z", page: "3" });
     expect(swell.put).toHaveBeenCalledWith("/pulls/p1", expect.objectContaining({ changed: 3, status: "completed", page: null }));
-    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { orders_checked_at: "2026-10-07T11:50:00.000Z" } }]]);
+    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { orders_checked_at: "2026-10-07T11:50:00.000Z" }, $events: false }]]);
     expect(result.run).toMatchObject({ id: "p1", changed: 3 });
   });
 
@@ -226,7 +226,7 @@ describe("pullSource: inventory", () => {
         report: [{ product: "SIMPLE", variant: null, change: 5, sku: "SIMPLE" }],
       }),
     );
-    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { stock_checked_at: "2026-10-07T12:00:00.000Z" } }]]);
+    expect(settingsPut(swell)).toEqual([["/settings/katana", { katana: { stock_checked_at: "2026-10-07T12:00:00.000Z" }, $events: false }]]);
   });
 
   it("appends stock changes to a running check's report", async () => {
