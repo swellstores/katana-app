@@ -6,6 +6,8 @@
 	"version": "1.0.0",
 	"permissions": [],
 	"support_email": "support@swell.is",
+	"documentation_url": "https://developers.swell.is/app-guides/katana",
+	"price_external": true,
 	"integrations": [
 		"katana"
 	],
@@ -13,7 +15,7 @@
 		{
 			"id": "settings",
 			"title": "Connected in a few minutes",
-			"description": "Paste a Katana API key and pick the location that ships your orders.",
+			"description": "Paste a Katana API key and enter the ID of the location that ships your orders.",
 			"image_src": "assets/screenshots/1-settings.png"
 		},
 		{
