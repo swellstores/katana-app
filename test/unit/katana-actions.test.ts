@@ -99,7 +99,7 @@ describe("katana-actions", () => {
     it("surfaces Katana errors", async () => {
       stub({ "GET /locations": () => jsonResponse({ error: { message: "Unauthorized" } }, 401), "GET /tax_rates": { data: [] } });
       const { req } = setup();
-      await expect(handler(req)).rejects.toMatchObject({ status: 401 });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: expect.stringContaining("didn't accept the API key") });
     });
   });
 

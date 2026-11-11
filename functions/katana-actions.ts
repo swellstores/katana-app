@@ -1,4 +1,5 @@
 import {
+  KatanaError,
   KatanaSettings,
   getAppData,
   getKatanaSettings,
@@ -47,7 +48,22 @@ export default async function (req: SwellRequest) {
 }
 
 async function testConnection(settings: KatanaSettings) {
-  const [locations, taxRates] = await Promise.all([listLocations(settings), listTaxRates(settings)]);
+  let locations: any[];
+  let taxRates: any[];
+  try {
+    [locations, taxRates] = await Promise.all([listLocations(settings), listTaxRates(settings)]);
+  } catch (err) {
+    if (err instanceof KatanaError && (err.status === 401 || err.status === 403)) {
+      throw new SwellError(
+        "Katana didn't accept the API key. Create a new one in Katana → Settings → API → API keys, save it, then test again.",
+        { status: 400 },
+      );
+    }
+    if (err instanceof KatanaError) {
+      throw new SwellError(`${err.message.replace(/\.$/, '')}. Try again in a minute.`, { status: 400 });
+    }
+    throw new SwellError("Couldn't reach Katana. Try again in a minute.", { status: 400 });
+  }
 
   const locationList = locations.map((l: any) => `${l.id} = ${l.name}${l.sales_allowed === false ? ' (sales not allowed)' : ''}`);
   const taxList = taxRates.map((t: any) => `${t.id} = ${t.display_name || t.name}`);
