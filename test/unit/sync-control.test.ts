@@ -20,7 +20,7 @@ describe("sync-control", () => {
 
   it("doesn't cancel a finished job", async () => {
     const { req, put } = setup("cancel", { id: ID, status: "completed" });
-    expect(await handler(req)).toEqual({ message: "This sync is already completed." });
+    await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "This sync is already completed." });
     expect(put).not.toHaveBeenCalled();
   });
 
@@ -39,18 +39,18 @@ describe("sync-control", () => {
 
   it("doesn't resume while another job of the type is active", async () => {
     const { req, put } = setup("resume", { id: ID, type: "orders", status: "canceled" }, [{ id: "other", status: "running" }]);
-    expect(await handler(req)).toEqual({ message: "Another sync of this type is active. Cancel it or wait for it to finish first." });
+    await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Another sync of this type is active. Cancel it or wait for it to finish first." });
     expect(put).not.toHaveBeenCalled();
   });
 
   it("doesn't resume a running or completed job", async () => {
     const { req } = setup("resume", { id: ID, status: "completed" });
-    expect(await handler(req)).toEqual({ message: "Only failed, canceled or waiting syncs can be resumed. This one is completed." });
+    await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Only failed, canceled or waiting syncs can be resumed. This one is completed." });
   });
 
   it("validates the record and the action", async () => {
     await expect(handler(setup("cancel", null, [], "../x").req)).rejects.toMatchObject({ status: 400 });
-    await expect(handler(setup("cancel", null).req)).rejects.toMatchObject({ status: 404 });
+    await expect(handler(setup("cancel", null).req)).rejects.toMatchObject({ status: 400 });
     await expect(handler(setup("nope", { id: ID, status: "running" }).req)).rejects.toMatchObject({ status: 400 });
   });
 });

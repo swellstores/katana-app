@@ -44,14 +44,15 @@ describe("katana-actions", () => {
 
   it("asks for the API key first", async () => {
     const { req } = setup({ settings: { api_key: "" } });
-    expect(await handler(req)).toEqual({ message: "Enter the Katana API key and save the settings first." });
+    await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Enter the Katana API key and save the settings first." });
   });
 
   it.each(["check_now", "sync_inventory", "send_orders", "send_products", "send_order"])(
     "does not run %s when the app is disabled",
     async (action) => {
       const { req, put, post } = setup({ action, settings: { ...SETTINGS, enabled: false } });
-      expect(await handler(req)).toEqual({
+      await expect(handler(req)).rejects.toMatchObject({
+        status: 400,
         message: 'The Katana app is turned off. Turn on "Enabled" in the app settings first.',
       });
       expect(fetchMock).not.toHaveBeenCalled();
@@ -88,12 +89,13 @@ describe("katana-actions", () => {
     it("points out unknown or missing IDs", async () => {
       stub(routes);
       const unknown = setup({ settings: { ...SETTINGS, location_id: 99, tax_rate_id: 98 } });
-      const result = (await handler(unknown.req)) as { message: string };
+      const result = await handler(unknown.req).catch((err) => err);
+      expect(result.status).toBe(400);
       expect(result.message).toContain("Location ID 99 does not exist in Katana.");
       expect(result.message).toContain("Tax rate ID 98 does not exist in Katana.");
 
       const missing = setup({ settings: { ...SETTINGS, location_id: undefined } });
-      expect(((await handler(missing.req)) as { message: string }).message).toContain("Location ID is not set.");
+      await expect(handler(missing.req)).rejects.toMatchObject({ status: 400, message: expect.stringContaining("Location ID is not set.") });
     });
 
     it("surfaces Katana errors", async () => {
@@ -118,9 +120,18 @@ describe("katana-actions", () => {
       expect(put).toHaveBeenCalledWith("/settings/katana", { katana: { orders_checked_at: expect.any(String) }, $events: false });
     });
 
+    it("shows a check stopped by a Katana error in red", async () => {
+      stub({ "GET /sales_orders": () => jsonResponse({ error: { message: "down" } }, 503), "GET /inventory_movements": { data: [] } });
+      const { req } = setup({
+        action: "check_now",
+        settings: { ...SETTINGS, sync_inventory: false, orders_checked_at: "2026-10-07T10:00:00.000Z" },
+      });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: expect.stringContaining("Not finished") });
+    });
+
     it("needs a location", async () => {
       const { req } = setup({ action: "check_now", settings: { ...SETTINGS, location_id: undefined } });
-      expect(await handler(req)).toEqual({ message: "Set the API key and Location ID first." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Set the API key and Location ID first." });
     });
   });
 
@@ -139,9 +150,9 @@ describe("katana-actions", () => {
 
     it("needs a location and inventory sync on", async () => {
       const noLocation = setup({ action: "sync_inventory", settings: { ...SETTINGS, location_id: undefined } });
-      expect(await handler(noLocation.req)).toEqual({ message: "Set the API key and Location ID first." });
+      await expect(handler(noLocation.req)).rejects.toMatchObject({ status: 400, message: "Set the API key and Location ID first." });
       const off = setup({ action: "sync_inventory", settings: { ...SETTINGS, sync_inventory: false } });
-      expect(await handler(off.req)).toEqual({ message: 'Turn on "Sync stock from Katana automatically" in the app settings first.' });
+      await expect(handler(off.req)).rejects.toMatchObject({ status: 400, message: 'Turn on "Sync stock from Katana automatically" in the app settings first.' });
     });
   });
 
@@ -162,7 +173,7 @@ describe("katana-actions", () => {
 
     it("needs credentials", async () => {
       const { req } = setup({ action: "send_orders", settings: { api_key: "k" } });
-      expect(await handler(req)).toEqual({ message: "Set the API key and Location ID first." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Set the API key and Location ID first." });
     });
   });
 
@@ -175,7 +186,7 @@ describe("katana-actions", () => {
 
     it("needs credentials", async () => {
       const { req } = setup({ action: "send_products", settings: { api_key: "k" } });
-      expect(await handler(req)).toEqual({ message: "Set the API key and Location ID first." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Set the API key and Location ID first." });
     });
   });
 
@@ -212,20 +223,20 @@ describe("katana-actions", () => {
     ])("does not send a canceled order %s", async (_name, app) => {
       const order = makeOrder({ canceled: true, $app: app });
       const { req, put } = setup({ action: "send_order", data: sendData, order });
-      expect(await handler(req)).toEqual({ message: "This order is canceled, so it was not sent." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "This order is canceled, so it was not sent." });
       expect(fetchMock).not.toHaveBeenCalled();
       expect(put).not.toHaveBeenCalled();
     });
 
     it("skips orders with nothing to ship", async () => {
       const { req } = setup({ action: "send_order", data: sendData, order: makeOrder({ items: [] }) });
-      expect(await handler(req)).toEqual({ message: "This order has no items for Katana, so nothing was sent." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "This order has no items for Katana, so nothing was sent." });
     });
 
     it("shows and records the error", async () => {
       stub({ "GET /sales_orders": { data: [] }, "GET /variants": { data: [] } });
       const { req, put } = setup({ action: "send_order", data: sendData });
-      expect(await handler(req)).toEqual({ message: "Not sent: Not found in Katana (by SKU): ETH-YIRG-1K-ESP" });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Not sent: Not found in Katana (by SKU): ETH-YIRG-1K-ESP" });
       expect(put).toHaveBeenCalledWith(`/orders/${ORDER_ID}`, {
         $app: { katana: { katana_error: "Not found in Katana (by SKU): ETH-YIRG-1K-ESP" } },
       });
@@ -236,12 +247,12 @@ describe("katana-actions", () => {
       await expect(handler(bad.req)).rejects.toMatchObject({ status: 400 });
 
       const missing = setup({ action: "send_order", data: sendData, order: null });
-      await expect(handler(missing.req)).rejects.toMatchObject({ status: 404 });
+      await expect(handler(missing.req)).rejects.toMatchObject({ status: 400 });
     });
 
     it("needs credentials", async () => {
       const { req } = setup({ action: "send_order", data: sendData, settings: { api_key: "k" } });
-      expect(await handler(req)).toEqual({ message: "Set the API key and Location ID first." });
+      await expect(handler(req)).rejects.toMatchObject({ status: 400, message: "Set the API key and Location ID first." });
     });
   });
 });

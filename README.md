@@ -94,8 +94,8 @@ If the Katana tab shows an error, fix the cause (usually a missing SKU) and use 
 | `functions/inventory-sync.ts` | Cron, hourly at :02 (`2 * * * *`) | Starts a stock sync job unless one is active, and removes scheduled jobs completed more than 3 days ago. |
 | `functions/sync-run.ts` | `sync.created`, `sync.updated` (status pending/running) | Runs one step of a sync job. Saving the step's progress triggers the next step. |
 | `functions/sync-retry.ts` | Model schedule on `date_retry` | Sets a waiting job back to pending at its retry time. |
-| `functions/sync-control.ts` | Job actions | Cancel and Resume on a sync job. |
-| `functions/katana-actions.ts` | App actions | Test connection, Get updates from Katana, Sync stock from Katana, Create products in Katana (settings); Sync stock from Katana, Send orders to Katana, Create products in Katana (Katana tasks list); Send to Katana (order). |
+| `functions/sync-control.ts` | Job actions | Cancel and Resume on a sync job. A job that can't be canceled or resumed shows a red error popup. |
+| `functions/katana-actions.ts` | App actions | Test connection, Get updates from Katana, Sync stock from Katana, Create products in Katana (settings); Sync stock from Katana, Send orders to Katana, Create products in Katana (Katana tasks list); Send to Katana (order). Anything that stops an action (missing settings, app turned off, an unknown Location or Tax rate ID in Test connection, a check that failed, an order not sent) shows a red error popup; a started job or an order already in Katana shows a regular one. |
 | `functions/lib/katana.ts` | Shared | Katana API client (auth, errors, 429 handling, pagination params), resources, and the "changed since" queries used by polling. |
 | `functions/lib/mapping.ts` | Shared | Maps a Swell order to a Katana sales order, customer and addresses; finds missing SKUs; computes stock quantities. |
 | `functions/lib/orders.ts` | Shared | Sends and cancels orders (finds or creates the customer, creates the sales order and shipping fee); applies Katana status and tracking to Swell orders and creates the shipment. |
