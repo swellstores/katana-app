@@ -2,13 +2,13 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   applySalesOrder,
   cancelOrder,
-  createSwellShipment,
   findSwellOrder,
   getOrder,
   resolveCustomerId,
   sendOrder,
 } from "../../functions/lib/orders";
 import { DuplicateSkuError, MissingSkuError } from "../../functions/lib/mapping";
+import { ItemsAlreadyShipped, createSwellShipment } from "../../functions/lib/shipments";
 import { ACCOUNT_ID, ORDER_ID, SETTINGS, appValues, jsonResponse, katanaCalls, katanaFetch, makeOrder } from "../helpers/fixtures";
 
 function makeCtx(settings: Record<string, any> = SETTINGS) {
@@ -257,8 +257,47 @@ describe("applySalesOrder", () => {
       katana_tracking_number: "1Z999",
       katana_tracking_url: "https://track/1Z999",
       katana_shipment_id: "ship_1",
+      katana_shipment_status: "created",
+      katana_note: null,
       katana_synced_at: expect.any(String),
     });
+    expect(ctx.swell.post.mock.calls[0][1].$validate_items).toBe(true);
+  });
+
+  it("notes the order instead of shipping items already shipped elsewhere", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    stubKatana({ "GET /sales_order_fulfillments": { data: [fulfillment] } });
+    const order = linked();
+    order.items[0].quantity_shipment_deliverable = 0;
+    const ctx = ctxWithOrder(order);
+
+    expect(await applySalesOrder(ctx, delivered as any)).toBe("updated");
+
+    expect(ctx.swell.post).not.toHaveBeenCalled();
+    const values = ctx.swell.put.mock.calls[0][1].$app.katana;
+    expect(values).toMatchObject({ katana_status: "DELIVERED", katana_tracking_number: "1Z999", katana_shipment_status: "shipped_elsewhere" });
+    expect(values.katana_shipment_id).toBeUndefined();
+    expect(values.katana_note).toContain("already shipped by another shipment, or refunded or canceled (nothing left to ship)");
+  });
+
+  it("saves status and tracking, then stops the check while the order's shipments are locked", async () => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    stubKatana({ "GET /sales_order_fulfillments": { data: [fulfillment] } });
+    const ctx = ctxWithOrder(linked());
+    ctx.swell.post.mockRejectedValue(
+      Object.assign(new Error("POST /shipments"), {
+        name: "SwellError",
+        status: 400,
+        body: { order_id: { message: "Order shipments are being updated, please try again" } },
+      }),
+    );
+
+    await expect(applySalesOrder(ctx, delivered as any)).rejects.toThrow(/couldn't create the shipment for order 100506 yet/);
+
+    const values = ctx.swell.put.mock.calls[0][1].$app.katana;
+    expect(values).toMatchObject({ katana_status: "DELIVERED", katana_tracking_number: "1Z999" });
+    expect(values.katana_shipment_id).toBeUndefined();
+    expect(values.katana_shipment_status).toBeUndefined();
   });
 
   it("does not create a second shipment and skips unchanged orders", async () => {
@@ -307,13 +346,15 @@ describe("applySalesOrder", () => {
 });
 
 describe("createSwellShipment", () => {
-  it("returns null when nothing is left to ship", async () => {
+  it("treats nothing left to ship as shipped elsewhere", async () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     const ctx = makeCtx();
     const order = makeOrder();
     order.items[0].quantity_shipment_deliverable = 0;
     ctx.swell.get.mockResolvedValue(order);
-    expect(await createSwellShipment(ctx.swell, ORDER_ID, { id: 900, order_no: "SW-1" } as any)).toBeNull();
+    await expect(createSwellShipment(ctx.swell, ORDER_ID, { id: 900, order_no: "SW-1" } as any)).rejects.toBeInstanceOf(
+      ItemsAlreadyShipped,
+    );
     expect(ctx.swell.post).not.toHaveBeenCalled();
   });
 

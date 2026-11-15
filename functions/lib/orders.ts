@@ -1,6 +1,5 @@
 import {
   KatanaError,
-  KatanaFulfillment,
   KatanaSalesOrder,
   KatanaSettings,
   OPEN_STATUSES,
@@ -16,6 +15,14 @@ import {
   listFulfillments,
 } from './katana';
 import { DuplicateSkuError, buildCustomer, buildSalesOrder, buildShippingFee, itemSku, katanaItems } from './mapping';
+import {
+  ItemsAlreadyShipped,
+  SHIPMENT_CREATED,
+  SHIPPED_ELSEWHERE,
+  ShipmentPending,
+  createSwellShipment,
+  itemsShippedNote,
+} from './shipments';
 import { findStockTargets } from './stock';
 
 export interface SyncContext {
@@ -205,66 +212,30 @@ export async function applySalesOrder(
     return 'unchanged';
   }
 
+  let pendingError: ShipmentPending | undefined;
   if (wantsShipment) {
-    const shipmentId = await createSwellShipment(swell, order.id, salesOrder, tracked);
-    if (shipmentId) {
-      values.katana_shipment_id = shipmentId;
+    try {
+      const shipmentId = await createSwellShipment(swell, order.id, salesOrder, tracked);
+      if (shipmentId) {
+        values.katana_shipment_id = shipmentId;
+        values.katana_shipment_status = SHIPMENT_CREATED;
+        values.katana_note = null;
+      }
+    } catch (err) {
+      if (err instanceof ItemsAlreadyShipped) {
+        values.katana_shipment_status = SHIPPED_ELSEWHERE;
+        values.katana_note = itemsShippedNote(err.message);
+      } else if (err instanceof ShipmentPending) {
+        pendingError = err;
+      } else {
+        throw err;
+      }
     }
   }
 
   values.katana_synced_at = new Date().toISOString();
   await swell.put(`/orders/${order.id}`, ctx.appValues(values));
+  // status and tracking are saved; the error stops the check, and the next one retries the shipment
+  if (pendingError) throw pendingError;
   return 'updated';
-}
-
-export async function createSwellShipment(
-  swell: SwellAPI,
-  orderId: string,
-  salesOrder: KatanaSalesOrder,
-  fulfillment?: KatanaFulfillment,
-): Promise<string | null> {
-  const order = await swell.get(`/orders/${orderId}`);
-  const items = (order?.items || [])
-    .filter((item: any) => item.delivery === 'shipment' && item.quantity_shipment_deliverable > 0)
-    .map((item: any) => ({
-      order_item_id: item.id,
-      product_id: item.product_id,
-      variant_id: item.variant_id,
-      quantity: item.quantity_shipment_deliverable,
-    }));
-
-  if (!items.length) {
-    console.log(`Katana: order ${order?.number} has nothing left to ship`);
-    return null;
-  }
-
-  const shipping = order.shipping || {};
-  const trackingNumber = fulfillment?.tracking_number || salesOrder.tracking_number || undefined;
-  const trackingUrl = fulfillment?.tracking_url || salesOrder.tracking_number_url || undefined;
-
-  const shipment = await swell.post('/shipments', {
-    order_id: order.id,
-    items,
-    destination: {
-      name: shipping.name,
-      first_name: shipping.first_name,
-      last_name: shipping.last_name,
-      address1: shipping.address1,
-      address2: shipping.address2,
-      city: shipping.city,
-      state: shipping.state,
-      zip: shipping.zip,
-      country: shipping.country,
-      phone: shipping.phone,
-    },
-    carrier: fulfillment?.tracking_carrier || undefined,
-    carrier_name: fulfillment?.tracking_carrier || undefined,
-    service: fulfillment?.tracking_method || undefined,
-    service_name: fulfillment?.tracking_method || undefined,
-    tracking_code: trackingNumber,
-    notes: `Katana sales order ${salesOrder.order_no}${trackingUrl ? `: ${trackingUrl}` : ''}`,
-  });
-
-  console.log(`Katana: created shipment ${shipment.id} for order ${order.number}`);
-  return shipment.id;
 }

@@ -40,9 +40,31 @@
       "readonly": true
     },
     {
+      "id": "katana_shipment_status",
+      "label": "Swell shipment",
+      "type": "select",
+      "readonly": true,
+      "options": [
+        {
+          "value": "created",
+          "label": "Created"
+        },
+        {
+          "value": "shipped_elsewhere",
+          "label": "Not created, nothing left to ship"
+        }
+      ]
+    },
+    {
       "id": "katana_synced_at",
       "label": "Last synced",
       "type": "datetime",
+      "readonly": true
+    },
+    {
+      "id": "katana_note",
+      "label": "Note",
+      "type": "long_text",
       "readonly": true
     },
     {
@@ -59,6 +81,10 @@
         {
           "id": "katana_status",
           "label": "Katana"
+        },
+        {
+          "id": "katana_shipment_status",
+          "label": "Katana shipment"
         }
       ]
     },
@@ -108,6 +134,15 @@
               "type": "field_row",
               "fields": [
                 {
+                  "id": "katana_shipment_status",
+                  "admin_span": 2
+                }
+              ]
+            },
+            {
+              "type": "field_row",
+              "fields": [
+                {
                   "id": "katana_sales_order_id"
                 },
                 {
@@ -120,7 +155,22 @@
               ]
             },
             {
-              "id": "katana_error"
+              "id": "katana_note",
+              "conditions": {
+                "katana_note": {
+                  "$exists": true,
+                  "$ne": null
+                }
+              }
+            },
+            {
+              "id": "katana_error",
+              "conditions": {
+                "katana_error": {
+                  "$exists": true,
+                  "$ne": null
+                }
+              }
             }
           ]
         }

@@ -29,6 +29,15 @@
       "type": "objectid",
       "description": "Swell shipment created when the sales order was delivered in Katana"
     },
+    "katana_shipment_status": {
+      "type": "string",
+      "enum": ["created", "shipped_elsewhere"],
+      "description": "Whether the app created the Swell shipment or found nothing left to ship (shipped elsewhere, refunded or canceled)"
+    },
+    "katana_note": {
+      "type": "string",
+      "description": "Why no Swell shipment was created"
+    },
     "katana_synced_at": {
       "type": "date",
       "description": "Last time the order was sent to or updated from Katana"
