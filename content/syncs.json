@@ -491,7 +491,8 @@
           "id": "last_error",
           "conditions": {
             "last_error": {
-              "$exists": true
+              "$exists": true,
+              "$ne": null
             }
           }
         },

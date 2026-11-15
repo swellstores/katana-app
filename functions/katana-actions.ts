@@ -91,7 +91,8 @@ async function testConnection(settings: KatanaSettings) {
     `Tax rates: ${taxList.join(', ') || 'none'}.`,
   ].join(' ');
   if (problems.length) fail(message);
-  return { message };
+  const off = settings.enabled === false ? ' The app is turned off in its settings, so nothing syncs.' : '';
+  return { message: `${message}${off}` };
 }
 
 async function checkNow(req: SwellRequest, settings: KatanaSettings) {

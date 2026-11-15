@@ -86,6 +86,14 @@ describe("katana-actions", () => {
       });
     });
 
+    it("works while the app is turned off and says so", async () => {
+      stub(routes);
+      const { req } = setup({ settings: { ...SETTINGS, enabled: false } });
+      expect(((await handler(req)) as { message: string }).message).toMatch(
+        /^Connected to Katana\..* The app is turned off in its settings, so nothing syncs\.$/,
+      );
+    });
+
     it("points out unknown or missing IDs", async () => {
       stub(routes);
       const unknown = setup({ settings: { ...SETTINGS, location_id: 99, tax_rate_id: 98 } });

@@ -51,7 +51,7 @@ All credentials and options are app settings (`settings/katana.json`). Nothing i
 | Sync job page size | no | 50 | Katana inventory rows, Swell orders or Swell products read per step of a sync job (1–250; product exports use at most 100). Each step also stops after about 7 seconds. |
 | Sales orders last checked | read-only | | Start of the last completed 5-minute check of sales orders. The next one reads changes from a minute before. |
 | Stock last checked | read-only | | Start of the last completed 5-minute check of stock movements. The next one reads changes from a minute before. |
-| Enabled | no | on | Turns off sending orders, cancellations, the 5-minute check, sync jobs and the app actions (except Test connection) without uninstalling the app. |
+| Enabled | no | on | Turns off sending orders, cancellations, the 5-minute check, sync jobs and the app actions (except Test connection, which says the app is off) without uninstalling the app. |
 
 The API key and Location ID aren't marked required in the form, because you need a saved key before **Test connection** can show the location IDs. Nothing syncs until both are set.
 
@@ -152,7 +152,7 @@ If the Katana tab shows an error, fix the cause (usually a missing SKU) and use 
 - **Negative stock.** Katana allows negative stock (for example, delivering a sales order without enough stock) but doesn't recommend it, because its average costs and margins become wrong. The app mirrors negative levels both ways and doesn't prevent them; Swell blocks purchases at a negative level unless the product allows backorders.
 - **Overlapping stock writes.** A 5-minute check and a stock sync job that change the same SKU at the same moment could each post the difference. The hourly job starts at :02 to stay clear of the check; the next sync corrects any drift.
 - **Order sync scope.** **Send orders to Katana** skips canceled and delivered orders, orders already linked to a sales order, and orders with no items for Katana. **Send to Katana** on a single order refuses canceled orders. It doesn't re-send orders that failed earlier in the same job; fix them and use **Send to Katana** on the order.
-- **Retries.** Errors are saved on the order's `katana_error`. Only Katana 429 and 5xx errors are retried: order events by the platform, sync jobs by `sync-retry`. Model-event functions that keep failing are turned off by the platform after about 4 days. `swell app push --force` turns them back on.
+- **Retries.** Errors are saved on the order's `katana_error`. Only Katana 429 and 5xx errors, and network or Swell errors, are retried: order events by the platform, sync jobs by `sync-retry`. Model-event functions that keep failing are turned off by the platform after about 4 days. `swell app push --force` turns them back on.
 
 ## Development
 

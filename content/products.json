@@ -28,7 +28,13 @@
               "id": "katana_stock_synced_at"
             },
             {
-              "id": "katana_error"
+              "id": "katana_error",
+              "conditions": {
+                "katana_error": {
+                  "$exists": true,
+                  "$ne": null
+                }
+              }
             }
           ]
         }
