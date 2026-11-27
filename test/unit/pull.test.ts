@@ -307,7 +307,7 @@ describe("runChecks", () => {
   it("checks both sources, alternating which goes first", async () => {
     stub({ "GET /sales_orders": { data: [] }, "GET /inventory_movements": { data: [] } });
     const first = await runChecks(ctx(makeSwell()), 7000, () => T);
-    const second = await runChecks(ctx(makeSwell()), 7000, () => T + 5 * 60_000);
+    const second = await runChecks(ctx(makeSwell()), 7000, () => T + 15 * 60_000);
     expect(first.map((r) => r.source)).toEqual(["sales_orders", "inventory"]);
     expect(second.map((r) => r.source)).toEqual(["inventory", "sales_orders"]);
   });

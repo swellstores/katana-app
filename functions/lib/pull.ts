@@ -1,4 +1,4 @@
-// Katana → Swell checks: every 5 minutes, read what changed in Katana since the previous check of each
+// Katana → Swell checks: every 15 minutes, read what changed in Katana since the previous check of each
 // source and apply it to Swell. A check that changes something (or must continue on the next run) is
 // logged in `apps/katana/pulls`; a check that finds nothing writes only its checkpoint.
 
@@ -14,8 +14,8 @@ import { StockChange, applyInventory, mergeSkus, reportPush, saveSyncState } fro
 
 export type PullSource = 'sales_orders' | 'inventory';
 
-// katana-poll runs every 5 minutes (its cron schedule)
-export const PULL_INTERVAL_MS = 5 * 60_000;
+// katana-poll runs every 15 minutes (its cron schedule)
+export const PULL_INTERVAL_MS = 15 * 60_000;
 // Stop starting new work after this long, well within the function's time limit
 export const TIME_BUDGET_MS = 7000;
 // A source's first check looks back this far

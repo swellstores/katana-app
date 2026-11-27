@@ -7,7 +7,7 @@ export const KEEP_SCHEDULED_MS = 3 * 24 * 60 * 60_000;
 export const config: SwellConfig = {
   description: 'Start the hourly stock sync job from Katana',
   cron: {
-    // a few minutes past the hour, away from the 5-minute check
+    // a few minutes past the hour, away from the 15-minute check
     schedule: '2 * * * *',
   },
 };

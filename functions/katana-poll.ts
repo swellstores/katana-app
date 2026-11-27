@@ -2,9 +2,9 @@ import { getKatanaSettings, hasCredentials } from './lib/katana';
 import { runChecks } from './lib/pull';
 
 export const config: SwellConfig = {
-  description: 'Check Katana every 5 minutes for sales order status, tracking and stock changes',
+  description: 'Check Katana every 15 minutes for sales order status, tracking and stock changes',
   cron: {
-    schedule: '*/5 * * * *',
+    schedule: '*/15 * * * *',
   },
 };
 

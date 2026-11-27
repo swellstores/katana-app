@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.swell.store/setting.json",
   "label": "Katana",
-  "description": "Send Swell orders to Katana as sales orders, and every 5 minutes bring status, tracking and stock changes back to Swell. Create an API key in Katana → Settings → API → API keys. Jobs are listed under Katana tasks and checks under Katana pulls in the dashboard sidebar.",
+  "description": "Send Swell orders to Katana as sales orders, and every 15 minutes bring status, tracking and stock changes back to Swell. Create an API key in Katana → Settings → API → API keys. Jobs are listed under Katana tasks and checks under Katana pulls in the dashboard sidebar.",
   "actions": [
     {
       "id": "test_connection",
@@ -109,7 +109,7 @@
       "label": "Sync stock from Katana automatically",
       "type": "boolean",
       "ui": "toggle",
-      "description": "Sets Swell stock levels from Katana by SKU: every 5 minutes for items that moved, plus an hourly stock sync job. Only products with stock tracking on are changed.",
+      "description": "Sets Swell stock levels from Katana by SKU: every 15 minutes for items that moved, plus an hourly stock sync job. Only products with stock tracking on are changed.",
       "default": true
     },
     {

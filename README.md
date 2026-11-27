@@ -1,6 +1,6 @@
 # Katana for Swell
 
-Connects Swell to [Katana Cloud Inventory](https://katanamrp.com). Paid Swell orders become Katana **sales orders**. Every 5 minutes the app checks Katana for changes and brings status, tracking and stock back: when a sales order is delivered in Katana, the Swell order is fulfilled, and Swell stock levels follow Katana inventory. No webhook or Swell API key is needed.
+Connects Swell to [Katana Cloud Inventory](https://katanamrp.com). Paid Swell orders become Katana **sales orders**. Every 15 minutes the app checks Katana for changes and brings status, tracking and stock back: when a sales order is delivered in Katana, the Swell order is fulfilled, and Swell stock levels follow Katana inventory. No webhook or Swell API key is needed.
 
 ## Features
 
@@ -15,10 +15,10 @@ Connects Swell to [Katana Cloud Inventory](https://katanamrp.com). Paid Swell or
 - **Customers:** the Katana customer is found by email or created, with the order's addresses. Its ID is saved on the Swell account, so the lookup happens only once per customer.
 - **Missing or duplicate SKUs:** if any item sent to Katana has no SKU, a SKU that isn't in Katana, or a SKU that more than one Swell product or variant uses, nothing is created and the order isn't retried. The order shows which SKUs are missing or duplicated. Fix them, then use **Send to Katana** on the order.
 - **Canceled orders:** when a Swell order is canceled, its Katana sales order is deleted if it hasn't been packed or delivered yet. If it has, it's kept and the order shows why. This can be turned off.
-- **Status and tracking from Katana:** every 5 minutes the app reads the sales orders it created that changed in Katana since the last check, and updates each Swell order's Katana status (`NOT_SHIPPED`, `PACKED`, `DELIVERED`, `DELETED`) and tracking number and URL.
+- **Status and tracking from Katana:** every 15 minutes the app reads the sales orders it created that changed in Katana since the last check, and updates each Swell order's Katana status (`NOT_SHIPPED`, `PACKED`, `DELIVERED`, `DELETED`) and tracking number and URL.
 - **Fulfillment:** when the sales order is **delivered** in Katana, the app creates a Swell shipment for the physical items still to be shipped. The shipment gets the tracking number, carrier and method from the Katana fulfillment. Digital items are never put in a shipment; an order with only digital items gets the `DELIVERED` status but no shipment.
 - **No double shipping:** the shipment is created with `$validate_items: true`, so Swell refuses items the order no longer has left to ship. If the items were already shipped another way (for example by hand), refunded or canceled, the app creates no shipment: the order's **Swell shipment** status becomes `Not created, nothing left to ship` (also a column in the orders list) and a note explains why. An app shipment already created for the sales order (found by its note `Katana sales order <number>`) is reused, and a copy made by an overlapping check is canceled. If the order's shipments are locked or reserved by another write, the status and tracking are saved and the next check retries the shipment.
-- **Stock from Katana:** Katana is the source of truth for stock. Every 5 minutes the app reads Katana's stock movements at the location since the last check, and sets the current level on the Swell product or variant with the same SKU. An hourly **stock sync job** also reconciles all inventory, which catches changes that don't create a stock movement (such as committed quantities). The level is either *in stock minus committed* or *in stock*, for one Katana location, and can be negative: negative stock in Katana (or more committed than in stock) becomes the same negative level in Swell, which Swell shows as out of stock. Swell stock is changed through normal stock adjustments, so the history shows "Katana stock sync".
+- **Stock from Katana:** Katana is the source of truth for stock. Every 15 minutes the app reads Katana's stock movements at the location since the last check, and sets the current level on the Swell product or variant with the same SKU. An hourly **stock sync job** also reconciles all inventory, which catches changes that don't create a stock movement (such as committed quantities). The level is either *in stock minus committed* or *in stock*, for one Katana location, and can be negative: negative stock in Katana (or more committed than in stock) becomes the same negative level in Swell, which Swell shows as out of stock. Swell stock is changed through normal stock adjustments, so the history shows "Katana stock sync".
 - **Katana tasks** (dashboard sidebar): long syncs run as jobs, one page per step, with live progress (checked, updated, skipped, SKUs not in Swell, failed), **Cancel** and **Resume**. If Katana is rate-limiting or down, a job waits and retries on its own (up to 8 times, backing off from 1 minute to 30 minutes). Three kinds:
   - **Stock from Katana:** all Katana inventory at the location, applied to Swell stock. Started every hour, or with **Sync stock from Katana** (app settings Actions menu, or the Katana tasks list). The job page has a **Stock changes** table listing only the Swell products and variants whose stock changed: product, variant, change (e.g. `-1`) and SKU. The dashboard shows the first three as columns; **View** on a row shows all four.
   - **Existing orders to Katana:** paid orders (all orders when sending on submit) that aren't in Katana yet and aren't delivered, optionally from a date. Each sales order commits stock in Katana until it's delivered there, so use a start date to leave out old orders. Started with **Send orders to Katana**. Orders Katana rejects get the error on their Katana tab and the job carries on.
@@ -46,7 +46,7 @@ All credentials and options are app settings (`settings/katana.json`). Nothing i
 | Sales order number prefix | no | `SW-` | Katana sales order number = prefix + Swell order number. Can be empty. |
 | When a Swell order is canceled | no | Delete | `Delete the Katana sales order (if not shipped yet)` or `Do nothing`. |
 | Create Swell shipment when delivered in Katana | no | on | Fulfills the Swell order with the Katana tracking number. |
-| Sync stock from Katana automatically | no | on | Sets Swell stock from Katana (moved items every 5 minutes + an hourly stock sync job). Only products with stock tracking on are changed. |
+| Sync stock from Katana automatically | no | on | Sets Swell stock from Katana (moved items every 15 minutes + an hourly stock sync job). Only products with stock tracking on are changed. |
 | Stock quantity to use | no | In stock minus committed | `In stock minus committed` (what's still free to sell) or `In stock`. |
 | Sync job page size | no | 50 | Katana inventory rows, Swell orders or Swell products read per step of a sync job (1–250; product exports use at most 100). Each step also stops after about 7 seconds. |
 | Sales orders last checked | read-only | | Start of the last completed 5-minute check of sales orders. The next one reads changes from a minute before. |
@@ -80,8 +80,8 @@ The API key and Location ID aren't marked required in the form, because you need
 ### 4. Try it
 
 1. Place and pay for a test order. Its **Katana** tab should show a sales order number such as `SW-1001`, status `NOT_SHIPPED`, and no error. The sales order should appear in Katana under **Sell**.
-2. Mark the sales order **Delivered** in Katana, with a tracking number on the fulfillment. Within 5 minutes (or right away with **Actions → Get updates from Katana** in the app settings), the Swell order should show status `DELIVERED`, the tracking number, and a new shipment.
-3. Change a product's stock in Katana (e.g. a stock adjustment). Within 5 minutes, or after **Get updates from Katana**, the Swell stock for that SKU should follow. **Katana pulls** shows a record for each check that changed something.
+2. Mark the sales order **Delivered** in Katana, with a tracking number on the fulfillment. Within 15 minutes (or right away with **Actions → Get updates from Katana** in the app settings), the Swell order should show status `DELIVERED`, the tracking number, and a new shipment.
+3. Change a product's stock in Katana (e.g. a stock adjustment). Within 15 minutes, or after **Get updates from Katana**, the Swell stock for that SKU should follow. **Katana pulls** shows a record for each check that changed something.
 
 If the Katana tab shows an error, fix the cause (usually a missing SKU) and use **Send to Katana** on the order.
 
@@ -90,7 +90,7 @@ If the Katana tab shows an error, fix the cause (usually a missing SKU) and use 
 | Function | Trigger | What it does |
 |---|---|---|
 | `functions/order-events.ts` | `order.submitted`, `order.paid`, `order.canceled` | Creates the sales order on the event chosen in settings. Deletes it on cancel. |
-| `functions/katana-poll.ts` | Cron, every 5 minutes (`*/5 * * * *`) | Checks sales orders and stock movements that changed in Katana and applies them to Swell; logs checks in `apps/katana/pulls`. |
+| `functions/katana-poll.ts` | Cron, every 15 minutes (`*/15 * * * *`) | Checks sales orders and stock movements that changed in Katana and applies them to Swell; logs checks in `apps/katana/pulls`. |
 | `functions/inventory-sync.ts` | Cron, hourly at :02 (`2 * * * *`) | Starts a stock sync job unless one is active, and removes scheduled jobs completed more than 3 days ago. |
 | `functions/sync-run.ts` | `sync.created`, `sync.updated` (status pending/running) | Runs one step of a sync job. Saving the step's progress triggers the next step. |
 | `functions/sync-retry.ts` | Model schedule on `date_retry` | Sets a waiting job back to pending at its retry time. |
@@ -120,7 +120,7 @@ If the Katana tab shows an error, fix the cause (usually a missing SKU) and use 
 1. Each run checks two sources, sales orders and stock, taking turns which goes first. Each source reads changes since its previous completed check, minus 1 minute so nothing saved during a check is missed. The first check looks back 1 hour.
 2. It reads `GET /v1/sales_orders?ecommerce_order_type=swell&updated_at_min=…&include_deleted=true` and finds each Swell order by `$app.katana.katana_sales_order_id`, falling back to the sales order's `ecommerce_order_id`. Delivered orders also read `GET /v1/sales_order_fulfillments` for the carrier and tracking.
 3. It reads `GET /v1/inventory_movements?location_id=…&created_at_min=…`, then `GET /v1/inventory` for the variants that moved, and sets their Swell stock.
-4. Only when a source is fully processed does it save its checkpoint (**Sales orders last checked** / **Stock last checked**). Checkpoints are written with `$events: false`, so they don't add a `setting.updated` event every 5 minutes. If time runs out or Katana fails, the check is saved as `running` in **Katana pulls** with its window and page, and the next run continues there. All updates are idempotent, and unchanged orders aren't written.
+4. Only when a source is fully processed does it save its checkpoint (**Sales orders last checked** / **Stock last checked**). Checkpoints are written with `$events: false`, so they don't add a `setting.updated` event every 15 minutes. If time runs out or Katana fails, the check is saved as `running` in **Katana pulls** with its window and page, and the next run continues there. All updates are idempotent, and unchanged orders aren't written.
 
 **Sync jobs:** creating a `syncs` record fires `sync.created`, and `sync-run` runs the first step: one page (stock: `GET /v1/inventory?page=…`; orders and products: Swell records after `last_id`), within about 7 seconds. It saves the counts and the cursor, and that update fires the next step until a short page completes the job. A Katana 429 or 5xx puts the job in `waiting` with `date_retry`; `sync-retry` sets it back to `pending` at that time. Other errors fail the job; **Resume** continues where it stopped. Only one job per type can be active.
 
@@ -144,7 +144,7 @@ If the Katana tab shows an error, fix the cause (usually a missing SKU) and use 
 - **Prices are sent as Swell has them.** If your Swell prices include tax, set up Katana's tax rate to match, or the totals will differ. Order-level discounts count only where Swell spreads them onto the items' `discount_total`.
 - **Digital items with stock tracking go to Katana like physical ones.** Their stock is reserved in Katana when the sales order is created and deducted only when it's marked **Delivered**, so someone has to deliver these sales orders in Katana even though nothing ships, including orders with only digital items. With the default **Stock quantity to use** (`In stock minus committed`) Swell stock stays right in the meantime; with `In stock`, stock syncs from Katana can put Swell stock back up until the sales order is delivered.
 - **Shipments only on delivery.** The Swell shipment is created when the whole sales order is `DELIVERED`, for everything still unshipped. Partial deliveries in Katana aren't mirrored. If Swell refuses the shipment because some of its items were shipped another way at the same time, no shipment is created; ship the rest by hand. Bundles shipped as one line aren't checked by Swell.
-- **Up to 5 minutes delay.** Changes in Katana reach Swell on the next check, not instantly. Use **Get updates from Katana** when testing.
+- **Up to 15 minutes delay.** Changes in Katana reach Swell on the next check, not instantly. Use **Get updates from Katana** when testing.
 - **Why not webhooks:** Katana rejects webhook URLs that contain credentials (it answers `500`), and Swell function routes can only be reached with a public key in the request. So Katana webhooks can't call the app directly. Polling avoids that and needs no key.
 - **Canceling doesn't undo shipped orders.** Packed or delivered sales orders are kept when the Swell order is canceled.
 - **Rate limit.** Katana allows 60 requests per minute. Sending one order takes 4–6 requests. Each 5-minute check takes 2, plus 1 per delivered order and 1 per 50 moved items. A stock sync step takes 1. If Katana asks the app to wait up to 3 seconds, it waits once; otherwise the request fails and is retried later (sync jobs wait 1 minute).
@@ -184,7 +184,7 @@ swell logs --type function -s order-events
     |---|---|---|
     | `1-settings.png` | Connected in a few minutes | App settings with the API key (secret field) and Location ID |
     | `2-katana-tasks.png` | Big syncs, step by step | **Katana tasks** list with the three start buttons and task progress |
-    | `3-katana-pulls.png` | Updates from Katana every 5 minutes | **Katana pulls** list with the stock and sales order checks |
+    | `3-katana-pulls.png` | Updates from Katana every 15 minutes | **Katana pulls** list with the stock and sales order checks |
     | `4-stock-from-katana.png` | Stock that follows Katana | A product's stock history with a "Katana stock sync (location …)" adjustment |
 
 

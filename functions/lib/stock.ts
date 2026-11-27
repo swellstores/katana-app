@@ -225,7 +225,7 @@ export async function applyInventory(
   return result;
 }
 
-// writes app-managed values into this app's settings record; checkpoints change every 5 minutes,
+// writes app-managed values into this app's settings record; checkpoints change every 15 minutes,
 // so the write skips the events log (`$events: false`)
 export async function saveSyncState(swell: SwellAPI, appId: string, values: Partial<KatanaSettings>): Promise<void> {
   await swell.put(`/settings/${appId}`, { katana: values, $events: false });
