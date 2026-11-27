@@ -9,6 +9,10 @@ export const config: SwellConfig = {
   cron: {
     // a few minutes past the hour, away from the 15-minute check
     schedule: '2 * * * *',
+    // Skipped while the app or stock sync is off, or there's no API key
+    conditions: {
+      $settings: { katana: { enabled: { $ne: false }, sync_inventory: { $ne: false }, api_key: { $empty: false } } },
+    },
   },
 };
 

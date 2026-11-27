@@ -5,6 +5,8 @@ export const config: SwellConfig = {
   description: 'Check Katana every 15 minutes for sales order status, tracking and stock changes',
   cron: {
     schedule: '*/15 * * * *',
+    // Skipped while the app is off or has no API key
+    conditions: { $settings: { katana: { enabled: { $ne: false }, api_key: { $empty: false } } } },
   },
 };
 
