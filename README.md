@@ -189,4 +189,4 @@ swell logs --type function -s order-events
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
+MIT. See [LICENSE](LICENSE).
