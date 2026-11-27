@@ -1,5 +1,6 @@
 {
 	"description": "Send orders to Katana and sync tracking and stock back to Swell",
+	"repository_url": "https://github.com/swellstores/katana-app",
 	"id": "katana",
 	"name": "Katana",
 	"type": "integration",

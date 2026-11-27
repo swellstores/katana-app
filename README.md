@@ -187,4 +187,6 @@ swell logs --type function -s order-events
     | `3-katana-pulls.png` | Updates from Katana every 15 minutes | **Katana pulls** list with the stock and sales order checks |
     | `4-stock-from-katana.png` | Stock that follows Katana | A product's stock history with a "Katana stock sync (location …)" adjustment |
 
+## License
 
+MIT. See [LICENSE](LICENSE). Contributions are welcome: see [CONTRIBUTING.md](CONTRIBUTING.md).
